@@ -3,7 +3,8 @@ import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { User } from '../models/User';
 import { StoreSettings } from '../models/StoreSettings';
-import { OrderStatus, PaymentStatus } from '../types';
+import { AuditLog } from '../models/AuditLog';
+import { OrderStatus } from '../types';
 
 // GET /api/admin/dashboard/stats
 export const getDashboardStats = async (_req: Request, res: Response) => {
@@ -74,7 +75,7 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
   });
 };
 
-// GET /api/admin/settings (Get store settings)
+// GET /api/admin/settings (Get full store settings for admin)
 export const getSettings = async (_req: Request, res: Response) => {
   let settings = await StoreSettings.findOne();
   if (!settings) {
@@ -92,6 +93,21 @@ export const updateSettings = async (req: Request, res: Response) => {
     Object.assign(settings, req.body);
     await settings.save();
   }
+
+  // Record Audit Log
+  if (req.user) {
+    await AuditLog.create({
+      adminId: req.user.userId,
+      adminEmail: req.user.email,
+      adminName: 'Admin',
+      action: 'UPDATE_STORE_SETTINGS',
+      resource: 'SETTINGS',
+      details: 'Store settings, banners or delivery rules updated.',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
   res.status(200).json({
     success: true,
     message: 'স্টোর সেটিংস সফলভাবে আপডেট হয়েছে।',
@@ -121,5 +137,18 @@ export const getAllOrders = async (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     data: orders,
+  });
+};
+
+// GET /api/admin/audit-logs (Security & Audit trails)
+export const getAuditLogs = async (_req: Request, res: Response) => {
+  const logs = await AuditLog.find()
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    data: logs,
   });
 };

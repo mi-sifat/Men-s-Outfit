@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Flame, Sparkles, TrendingUp, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ProductCard } from '../components/product/ProductCard';
 import { getAllProducts } from '../data/productStore';
+import { getLocalStoreSettings } from '../data/settingsStore';
+import type { StoreSettingsData } from '../data/settingsStore';
 
 interface HomePageProps {
   onAddToCart?: (product: any) => void;
@@ -13,6 +15,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
   const allProducts = getAllProducts();
   const newArrivals = allProducts.filter((p) => p.isNewArrival);
   const bestSellers = allProducts.filter((p) => p.isBestSeller);
+
+  const [settings, setSettings] = useState<StoreSettingsData>(() => getLocalStoreSettings());
+
+  useEffect(() => {
+    const handleUpdate = () => setSettings(getLocalStoreSettings());
+    window.addEventListener('store_settings_updated', handleUpdate);
+    return () => window.removeEventListener('store_settings_updated', handleUpdate);
+  }, []);
+
+  const activeBanner = settings.banners?.find((b) => b.isActive) || settings.banners?.[0];
 
   return (
     <div className="space-y-16 lg:space-y-24 pb-16">
@@ -31,21 +43,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15]">
-                আধুনিক পুরুষের ট্রেন্ডি <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-[#C5A880]">
-                  ড্রপ-শোল্ডার ও ওভারসাইজড
-                </span>{' '}
-                কালেকশন
+                {activeBanner?.title || 'আধুনিক পুরুষের ট্রেন্ডি কালেকশন'}
               </h1>
 
               <p className="text-slate-300 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                ১০০% কম্বড সুতি এবং হেভিওয়েট জিএসএম-এ প্রস্তুতকৃত নিখুঁত ফিটিং টি-শার্ট। বাংলাদেশের আবহাওয়ায় সর্বোচ্চ কমফোর্ট এবং আধুনিক স্ট্রিটস্টাইল লুক।
+                {activeBanner?.subtitle || '১০০% কম্বড সুতি এবং হেভিওয়েট জিএসএম-এ প্রস্তুতকৃত নিখুঁত ফিটিং টি-শার্ট। বাংলাদেশের আবহাওয়ায় সর্বোচ্চ কমফোর্ট।'}
               </p>
 
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
-                <Link to="/shop">
+                <Link to={activeBanner?.linkUrl || '/shop'}>
                   <Button variant="secondary" size="lg" className="shadow-lg shadow-[#C5A880]/20 font-bold gap-2">
-                    <span>কালেকশন দেখুন</span>
+                    <span>{activeBanner?.buttonText || 'কালেকশন দেখুন'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
@@ -78,13 +86,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
               <div className="relative mx-auto max-w-md lg:max-w-none">
                 <div className="aspect-4/5 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 bg-slate-900 group">
                   <img
-                    src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80"
-                    alt="Men's Outfit Lifestyle"
+                    src={activeBanner?.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'}
+                    alt={activeBanner?.title || "Men's Outfit Banner"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
-                    <span className="text-[#C5A880] text-xs font-mono uppercase tracking-widest font-bold">LIMITED DROP</span>
-                    <h3 className="text-white text-lg font-bold">Jet Black Drop-Shoulder Tee</h3>
+                    <span className="text-[#C5A880] text-xs font-mono uppercase tracking-widest font-bold">MEN'S OUTFIT</span>
+                    <h3 className="text-white text-lg font-bold">{activeBanner?.title || 'Jet Black Drop-Shoulder Tee'}</h3>
                     <p className="text-slate-300 text-xs mt-1">Starting from ৳ ৮৫০</p>
                   </div>
                 </div>

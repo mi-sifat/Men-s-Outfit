@@ -5,3 +5,4 @@ export * from './Order';
 export * from './Coupon';
 export * from './StoreSettings';
 export * from './Payment';
+export * from './AuditLog';

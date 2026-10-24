@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Phone, 
@@ -10,8 +10,18 @@ import {
   CreditCard,
   Share2
 } from 'lucide-react';
+import { getLocalStoreSettings } from '../../data/settingsStore';
+import type { StoreSettingsData } from '../../data/settingsStore';
 
 export const Footer: React.FC = () => {
+  const [settings, setSettings] = useState<StoreSettingsData>(() => getLocalStoreSettings());
+
+  useEffect(() => {
+    const handleUpdate = () => setSettings(getLocalStoreSettings());
+    window.addEventListener('store_settings_updated', handleUpdate);
+    return () => window.removeEventListener('store_settings_updated', handleUpdate);
+  }, []);
+
   return (
     <footer className="bg-[#0B0F19] text-slate-300 border-t border-slate-800">
       {/* Brand Value Propositions Bar */}
@@ -68,36 +78,48 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <img
-                src="/logo.png"
-                alt="Men's Outfit"
-                className="h-10 w-auto object-contain"
+                src={settings.logoUrl || '/logo.png'}
+                alt={settings.storeName || "Men's Outfit"}
+                className="h-10 w-auto object-contain rounded-md"
               />
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-6">
-              বাংলাদেশের আধুনিক তরুণদের জন্য প্রিমিয়াম কোয়ালিটির ওভারসাইজড, ড্রপ-শোল্ডার টি-শার্ট ও স্ট্রিটওয়্যার ফ্যাশন ব্র্যান্ড। কমফোর্ট ও ট্রেন্ডের দারুণ সংমিশ্রণ।
+              {settings.brandDescription || 'বাংলাদেশের আধুনিক তরুণদের জন্য প্রিমিয়াম কোয়ালিটির ওভারসাইজড, ড্রপ-শোল্ডার টি-শার্ট ও স্ট্রিটওয়্যার ফ্যাশন ব্র্যান্ড।'}
             </p>
             <div className="flex items-center gap-3">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full bg-slate-800 hover:bg-[#C5A880] hover:text-black flex items-center justify-center transition-colors text-xs font-bold"
-                aria-label="Facebook"
-              >
-                FB
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full bg-slate-800 hover:bg-[#C5A880] hover:text-black flex items-center justify-center transition-colors text-xs font-bold"
-                aria-label="Instagram"
-              >
-                IG
-              </a>
-              <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-                <Share2 className="w-4 h-4" />
-              </div>
+              {settings.socialLinks?.facebook && (
+                <a
+                  href={settings.socialLinks.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-slate-800 hover:bg-[#C5A880] hover:text-black flex items-center justify-center transition-colors text-xs font-bold"
+                  aria-label="Facebook"
+                >
+                  FB
+                </a>
+              )}
+              {settings.socialLinks?.instagram && (
+                <a
+                  href={settings.socialLinks.instagram}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-slate-800 hover:bg-[#C5A880] hover:text-black flex items-center justify-center transition-colors text-xs font-bold"
+                  aria-label="Instagram"
+                >
+                  IG
+                </a>
+              )}
+              {settings.socialLinks?.whatsapp && (
+                <a
+                  href={`https://wa.me/${settings.socialLinks.whatsapp.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-slate-800 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-colors text-xs font-bold"
+                  aria-label="WhatsApp"
+                >
+                  WA
+                </a>
+              )}
             </div>
           </div>
 
@@ -123,12 +145,11 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/order-tracking" className="hover:text-[#C5A880] transition-colors">অর্ডার ট্র্যাকিং (Track Order)</Link></li>
-              <li><Link to="/admin" className="text-[#C5A880] font-semibold hover:underline">অ্যাডমিন ড্যাশবোর্ড (Admin Panel)</Link></li>
+              <li><Link to="/admin" className="text-[#C5A880] font-semibold hover:underline">অ্যাডমিন ড্যাশবোর্ড (Admin)</Link></li>
               <li><Link to="/size-guide" className="hover:text-[#C5A880] transition-colors">সাইজ গাইড (Size Guide)</Link></li>
               <li><Link to="/shipping-policy" className="hover:text-[#C5A880] transition-colors">ডেলিভারি পলিসি</Link></li>
               <li><Link to="/return-policy" className="hover:text-[#C5A880] transition-colors">রিটার্ন ও রিফান্ড নীতি</Link></li>
               <li><Link to="/faq" className="hover:text-[#C5A880] transition-colors">সাধারণ জিজ্ঞাসা (FAQ)</Link></li>
-              <li><Link to="/contact" className="hover:text-[#C5A880] transition-colors">যোগাযোগ করুন</Link></li>
             </ul>
           </div>
 
@@ -140,15 +161,15 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm text-slate-400">
               <li className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#C5A880] shrink-0 mt-0.5" />
-                <span>ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ</span>
+                <span>{settings.storeAddress || 'ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ'}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-[#C5A880] shrink-0" />
-                <span>+880 1700-000000</span>
+                <span>{settings.storePhone || '+880 1700-000000'}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#C5A880] shrink-0" />
-                <span>support@echooutfits.com</span>
+                <span>{settings.storeEmail || 'support@mensoutfit.com'}</span>
               </li>
             </ul>
           </div>
@@ -156,10 +177,10 @@ export const Footer: React.FC = () => {
 
         {/* Bottom copyright & policies */}
         <div className="mt-12 pt-8 border-t border-slate-800 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} Men's Outfit. সর্বস্বত্ব সংরক্ষিত।</p>
+          <p>{settings.copyrightText || `© ${new Date().getFullYear()} Men's Outfit. সর্বস্বত্ব সংরক্ষিত।`}</p>
           <div className="flex items-center gap-6">
-            <Link to="/privacy-policy" className="hover:text-slate-300 transition-colors">গোপনীয়তা নীতি</Link>
-            <Link to="/terms-conditions" className="hover:text-slate-300 transition-colors">শর্তাবলী</Link>
+            <Link to="/shipping-policy" className="hover:text-slate-300 transition-colors">শিপিং পলিসি</Link>
+            <Link to="/return-policy" className="hover:text-slate-300 transition-colors">রিটার্ন পলিসি</Link>
           </div>
         </div>
       </div>

@@ -10,10 +10,13 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { AdminLoginPage } from './pages/AdminLoginPage';
+import { AdminProtectedRoute } from './components/auth/AdminProtectedRoute';
 import { ShippingPolicyPage } from './pages/ShippingPolicyPage';
 import { ReturnPolicyPage } from './pages/ReturnPolicyPage';
 import { FAQPage } from './pages/FAQPage';
 import { CartProvider, useCart } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
 
 function AppContent() {
   const { totalItems, addToCart } = useCart();
@@ -49,6 +52,10 @@ function AppContent() {
     <>
       <Toaster position="bottom-right" />
       <Routes>
+        {/* Dedicated Admin Login Route (outside storefront layout) */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+
+        {/* Storefront Layout */}
         <Route path="/" element={<MainLayout cartCount={totalItems} />}>
           <Route index element={<HomePage onAddToCart={handleAddToCart} />} />
           <Route path="shop" element={<ShopPage onAddToCart={handleAddToCart} />} />
@@ -63,8 +70,25 @@ function AppContent() {
           <Route path="shipping-policy" element={<ShippingPolicyPage />} />
           <Route path="return-policy" element={<ReturnPolicyPage />} />
           <Route path="faq" element={<FAQPage />} />
-          <Route path="admin" element={<AdminDashboardPage />} />
-          <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+
+          {/* Secure Protected Admin Routes */}
+          <Route
+            path="admin"
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboardPage />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/dashboard"
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboardPage />
+              </AdminProtectedRoute>
+            }
+          />
+
           {/* Fallback */}
           <Route path="*" element={<HomePage onAddToCart={handleAddToCart} />} />
         </Route>
@@ -76,9 +100,11 @@ function AppContent() {
 export function App() {
   return (
     <Router>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
+      <AuthProvider>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+      </AuthProvider>
     </Router>
   );
 }

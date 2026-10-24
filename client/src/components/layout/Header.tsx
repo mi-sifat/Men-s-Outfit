@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ShoppingBag, 
@@ -12,6 +12,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { getLocalStoreSettings } from '../../data/settingsStore';
+import type { StoreSettingsData } from '../../data/settingsStore';
 
 interface HeaderProps {
   cartCount?: number;
@@ -20,6 +22,13 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ cartCount = 0 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [settings, setSettings] = useState<StoreSettingsData>(() => getLocalStoreSettings());
+
+  useEffect(() => {
+    const handleUpdate = () => setSettings(getLocalStoreSettings());
+    window.addEventListener('store_settings_updated', handleUpdate);
+    return () => window.removeEventListener('store_settings_updated', handleUpdate);
+  }, []);
 
   const navigation = [
     { name: 'সব কালেকশন', href: '/shop' },
@@ -69,9 +78,9 @@ export const Header: React.FC<HeaderProps> = ({ cartCount = 0 }) => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center group">
               <img
-                src="/logo.png"
-                alt="Men's Outfit"
-                className="h-12 w-auto object-contain transition-opacity group-hover:opacity-90"
+                src={settings.logoUrl || '/logo.png'}
+                alt={settings.storeName || "Men's Outfit"}
+                className="h-12 w-auto object-contain transition-opacity group-hover:opacity-90 rounded-md"
               />
             </Link>
           </div>
