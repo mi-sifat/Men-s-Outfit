@@ -78,7 +78,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
                 <div className="aspect-4/5 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-800 bg-slate-900 group">
                   <img
                     src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80"
-                    alt="Echo Outfits Lifestyle"
+                    alt="Men's Outfit Lifestyle"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">

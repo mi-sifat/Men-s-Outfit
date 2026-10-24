@@ -65,20 +65,14 @@ export const Header: React.FC<HeaderProps> = ({ cartCount = 0 }) => {
             </button>
           </div>
 
-          {/* Luxury Logo Brand */}
+          {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1E293B] to-[#0F172A] text-[#C5A880] flex items-center justify-center font-black text-lg tracking-tight border border-[#C5A880]/30 shadow-lg shadow-[#C5A880]/5 group-hover:border-[#C5A880] transition-all">
-                EO
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-black tracking-wider text-white uppercase font-mono">
-                  ECHO <span className="text-[#C5A880]">OUTFITS</span>
-                </span>
-                <span className="text-[9px] tracking-[0.3em] text-slate-400 uppercase -mt-1 font-semibold">
-                  STREETWEAR • DHAKA
-                </span>
-              </div>
+            <Link to="/" className="flex items-center group">
+              <img
+                src="/logo.png"
+                alt="Men's Outfit"
+                className="h-12 w-auto object-contain transition-opacity group-hover:opacity-90"
+              />
             </Link>
           </div>
 

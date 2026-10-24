@@ -6,7 +6,7 @@ export const ReturnPolicyPage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-8 text-slate-300">
       <div className="border-b border-white/10 pb-4">
         <span className="text-xs font-mono font-bold text-[#C5A880] uppercase tracking-widest block mb-1">
-          ECHO OUTFITS POLICIES
+          MEN'S OUTFIT POLICIES
         </span>
         <h1 className="text-3xl font-black text-white">রিটার্ন ও এক্সচেঞ্জ নীতি (Return & Refund Policy)</h1>
       </div>
@@ -39,7 +39,7 @@ export const ReturnPolicyPage: React.FC = () => {
         </div>
 
         <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-400">
-          <strong className="text-white">রিটার্ন হেল্পলাইন:</strong> 01700-000000 (সকাল ১০টা থেকে রাত ১০টা) অথবা ইমেইল করুন: support@echooutfits.com
+          <strong className="text-white">রিটার্ন হেল্পলাইন:</strong> 01700-000000 (সকাল ১০টা থেকে রাত ১০টা) অথবা ইমেইল করুন: support@mensoutfit.com
         </div>
       </div>
     </div>

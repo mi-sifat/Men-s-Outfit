@@ -100,7 +100,7 @@ export const AdminDashboardPage: React.FC = () => {
             CONTROL CENTER
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white">
-            অ্যাডমিন ড্যাশবোর্ড (Echo Outfits Admin)
+            অ্যাডমিন ড্যাশবোর্ড (Men's Outfit Admin)
           </h1>
         </div>
 

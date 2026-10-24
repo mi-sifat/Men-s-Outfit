@@ -67,12 +67,11 @@ export const Footer: React.FC = () => {
           {/* Brand Bio */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-full bg-[#C5A880] text-[#0B0F19] flex items-center justify-center font-bold text-lg font-mono">
-                EO
-              </div>
-              <span className="text-xl font-black tracking-tight text-white uppercase font-mono">
-                ECHO <span className="text-[#C5A880]">OUTFITS</span>
-              </span>
+              <img
+                src="/logo.png"
+                alt="Men's Outfit"
+                className="h-10 w-auto object-contain"
+              />
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-6">
               বাংলাদেশের আধুনিক তরুণদের জন্য প্রিমিয়াম কোয়ালিটির ওভারসাইজড, ড্রপ-শোল্ডার টি-শার্ট ও স্ট্রিটওয়্যার ফ্যাশন ব্র্যান্ড। কমফোর্ট ও ট্রেন্ডের দারুণ সংমিশ্রণ।
@@ -156,7 +155,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom copyright & policies */}
         <div className="mt-12 pt-8 border-t border-slate-800 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} Echo Outfits. সর্বস্বত্ব সংরক্ষিত।</p>
+          <p>© {new Date().getFullYear()} Men's Outfit. সর্বস্বত্ব সংরক্ষিত।</p>
           <div className="flex items-center gap-6">
             <Link to="/privacy-policy" className="hover:text-slate-300 transition-colors">গোপনীয়তা নীতি</Link>
             <Link to="/terms-conditions" className="hover:text-slate-300 transition-colors">শর্তাবলী</Link>

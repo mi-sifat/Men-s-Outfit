@@ -6,14 +6,14 @@ export const ShippingPolicyPage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-8 text-slate-300">
       <div className="border-b border-white/10 pb-4">
         <span className="text-xs font-mono font-bold text-[#C5A880] uppercase tracking-widest block mb-1">
-          ECHO OUTFITS POLICIES
+          MEN'S OUTFIT POLICIES
         </span>
         <h1 className="text-3xl font-black text-white">ডেলিভারি ও শিপিং পলিসি (Shipping Policy)</h1>
       </div>
 
       <div className="space-y-6 text-sm leading-relaxed">
         <p>
-          Echo Outfits গ্রাহকদের দ্রুত ও নির্ভরযোগ্য ডেলিভারি সেবা প্রদানে প্রতিশ্রুতিবদ্ধ। আমরা সরাসরি আমাদের নিজস্ব টিম এবং বিশ্বস্ত কুরিয়ার পার্টনারদের (Pathao, Steadfast) মাধ্যমে সারাদেশে ক্যাশ অন ডেলিভারিতে পণ্য পৌঁছে দিই।
+          Men's Outfit গ্রাহকদের দ্রুত ও নির্ভরযোগ্য ডেলিভারি সেবা প্রদানে প্রতিশ্রুতিবদ্ধ। আমরা সরাসরি আমাদের নিজস্ব টিম এবং বিশ্বস্ত কুরিয়ার পার্টনারদের (Pathao, Steadfast) মাধ্যমে সারাদেশে ক্যাশ অন ডেলিভারিতে পণ্য পৌঁছে দিই।
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
