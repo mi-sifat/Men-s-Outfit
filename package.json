@@ -1,0 +1,26 @@
+{
+  "name": "echo-outfits",
+  "version": "1.0.0",
+  "description": "Echo Outfits — Bangladesh-Ready MERN Stack Men's Fashion E-Commerce Platform",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "test": "npm run test:server && npm run test:client",
+    "test:server": "cd server && npm test",
+    "test:client": "cd client && npm test",
+    "lint": "npm run lint:server && npm run lint:client",
+    "lint:server": "cd server && npm run lint",
+    "lint:client": "cd client && npm run lint",
+    "seed": "cd server && npm run seed",
+    "create-admin": "cd server && npm run create-admin"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
