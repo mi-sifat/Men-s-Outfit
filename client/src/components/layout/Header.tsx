@@ -108,11 +108,12 @@ export const Header: React.FC<HeaderProps> = ({ cartCount = 0 }) => {
             </button>
 
             <Link
-              to="/account"
-              className="hidden sm:flex p-2.5 text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-              aria-label="Account"
+              to="/admin"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#C5A880]/15 border border-white/10 hover:border-[#C5A880]/40 text-[#C5A880] text-xs font-bold transition-all"
+              title="অ্যাডমিন প্যানেল (Admin Panel)"
             >
-              <User className="w-5 h-5" />
+              <ShieldCheck className="w-4 h-4 text-[#C5A880]" />
+              <span className="hidden md:inline">অ্যাডমিন</span>
             </Link>
 
             <Link to="/cart">
@@ -174,12 +175,12 @@ export const Header: React.FC<HeaderProps> = ({ cartCount = 0 }) => {
 
           <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2">
             <Link
-              to="/account"
+              to="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 py-2.5 px-3 text-sm font-medium text-slate-300 hover:bg-white/5 rounded-lg"
+              className="flex items-center gap-2 py-2.5 px-3 text-sm font-semibold text-[#C5A880] bg-[#C5A880]/10 border border-[#C5A880]/20 rounded-lg"
             >
-              <User className="w-4 h-4 text-[#C5A880]" />
-              <span>আমার একাউন্ট</span>
+              <ShieldCheck className="w-4 h-4 text-[#C5A880]" />
+              <span>অ্যাডমিন ড্যাশবোর্ড (Admin)</span>
             </Link>
           </div>
         </div>

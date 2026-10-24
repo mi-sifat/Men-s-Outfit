@@ -63,6 +63,7 @@ function AppContent() {
           <Route path="shipping-policy" element={<ShippingPolicyPage />} />
           <Route path="return-policy" element={<ReturnPolicyPage />} />
           <Route path="faq" element={<FAQPage />} />
+          <Route path="admin" element={<AdminDashboardPage />} />
           <Route path="admin/dashboard" element={<AdminDashboardPage />} />
           {/* Fallback */}
           <Route path="*" element={<HomePage onAddToCart={handleAddToCart} />} />

@@ -12,7 +12,7 @@ import {
   Plus,
   Check
 } from 'lucide-react';
-import { SAMPLE_PRODUCTS } from '../data/sampleProducts';
+import { getAllProducts } from '../data/productStore';
 import { formatPrice } from '../lib/utils';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -25,8 +25,9 @@ interface ProductDetailsPageProps {
 export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ onAddToCart }) => {
   const { slug } = useParams<{ slug: string }>();
 
-  // Find product from sample data (fallback)
-  const product = SAMPLE_PRODUCTS.find((p) => p.slug === slug) || SAMPLE_PRODUCTS[0];
+  // Find product from store
+  const allProducts = getAllProducts();
+  const product = allProducts.find((p) => p.slug === slug) || allProducts[0];
 
   const [selectedImage, setSelectedImage] = useState<string>(product.images[0]);
   const [selectedSize, setSelectedSize] = useState<string>(product.variants[0]?.size || 'M');
@@ -61,7 +62,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ onAddToC
     });
   };
 
-  const relatedProducts = SAMPLE_PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
+  const relatedProducts = allProducts.filter((p: any) => p.id !== product.id).slice(0, 4);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">

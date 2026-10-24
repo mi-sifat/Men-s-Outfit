@@ -3,15 +3,16 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Flame, Sparkles, TrendingUp, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ProductCard } from '../components/product/ProductCard';
-import { SAMPLE_PRODUCTS } from '../data/sampleProducts';
+import { getAllProducts } from '../data/productStore';
 
 interface HomePageProps {
   onAddToCart?: (product: any) => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
-  const newArrivals = SAMPLE_PRODUCTS.filter((p) => p.isNewArrival);
-  const bestSellers = SAMPLE_PRODUCTS.filter((p) => p.isBestSeller);
+  const allProducts = getAllProducts();
+  const newArrivals = allProducts.filter((p) => p.isNewArrival);
+  const bestSellers = allProducts.filter((p) => p.isBestSeller);
 
   return (
     <div className="space-y-16 lg:space-y-24 pb-16">

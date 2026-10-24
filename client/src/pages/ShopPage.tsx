@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { ProductCard } from '../components/product/ProductCard';
-import { SAMPLE_PRODUCTS } from '../data/sampleProducts';
+import { getAllProducts } from '../data/productStore';
 
 interface ShopPageProps {
   onAddToCart?: (product: any) => void;
@@ -41,7 +41,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onAddToCart }) => {
   const categoryMeta = category ? CATEGORY_MAP[category.toLowerCase()] : null;
 
   const filteredProducts = useMemo(() => {
-    let list = [...SAMPLE_PRODUCTS];
+    let list = getAllProducts();
 
     if (category) {
       const target = category.toLowerCase();
@@ -91,7 +91,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onAddToCart }) => {
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }`}
         >
-          সব প্রোডাক্ট ({SAMPLE_PRODUCTS.length})
+          সব প্রোডাক্ট ({getAllProducts().length})
         </Link>
         <Link
           to="/category/oversized"
