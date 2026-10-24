@@ -23,11 +23,11 @@ export const AdminDashboardPage: React.FC = () => {
   const [orderFilter, setOrderFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Sample realistic admin orders state
-  const [orders, setOrders] = useState([
+  // Initial orders with localStorage support
+  const defaultOrders = [
     {
       id: 'ord-1',
-      orderNumber: 'EO-2026-00001',
+      orderNumber: 'MO-2026-00001',
       customerName: 'তানভীর আহমেদ',
       phone: '01712345678',
       address: 'ধানমন্ডি ২৭, ঢাকা',
@@ -39,7 +39,7 @@ export const AdminDashboardPage: React.FC = () => {
     },
     {
       id: 'ord-2',
-      orderNumber: 'EO-2026-00002',
+      orderNumber: 'MO-2026-00002',
       customerName: 'রাকিবুল হাসান',
       phone: '01898765432',
       address: 'জিইসি মোড়, চট্টগ্রাম',
@@ -51,7 +51,7 @@ export const AdminDashboardPage: React.FC = () => {
     },
     {
       id: 'ord-3',
-      orderNumber: 'EO-2026-00003',
+      orderNumber: 'MO-2026-00003',
       customerName: 'আরিফ চৌধুরী',
       phone: '01911223344',
       address: 'উত্তরা সেক্টর ৭, ঢাকা',
@@ -61,7 +61,19 @@ export const AdminDashboardPage: React.FC = () => {
       itemsCount: 3,
       createdAt: '২৩ অক্টো, ১১:০০ AM',
     },
-  ]);
+  ];
+
+  const [orders, setOrders] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('mens_outfit_orders') || '[]');
+      if (Array.isArray(stored) && stored.length > 0) {
+        return [...stored, ...defaultOrders];
+      }
+    } catch (e) {
+      console.warn('Could not parse stored orders', e);
+    }
+    return defaultOrders;
+  });
 
   // Delivery settings state
   const [settings, setSettings] = useState({

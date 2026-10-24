@@ -17,12 +17,61 @@ export const OrderTrackingPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/orders/track/${encodeURIComponent(searchToken.trim())}`);
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'অর্ডারের তথ্য পাওয়া যায়নি।');
+      let foundOrder: any = null;
+
+      try {
+        const res = await fetch(`/api/orders/track/${encodeURIComponent(searchToken.trim())}`);
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json();
+          if (res.ok && data?.data) {
+            foundOrder = data.data;
+          }
+        }
+      } catch (networkErr) {
+        // Backend offline or non-responsive
       }
-      setOrder(data.data);
+
+      // If backend not available, check local orders stored in localStorage
+      if (!foundOrder) {
+        try {
+          const stored = JSON.parse(localStorage.getItem('mens_outfit_orders') || '[]');
+          const query = searchToken.trim().toLowerCase();
+          const match = stored.find(
+            (o: any) =>
+              o.orderNumber?.toLowerCase() === query ||
+              o.trackingToken?.toLowerCase() === query
+          );
+
+          if (match) {
+            foundOrder = {
+              orderNumber: match.orderNumber,
+              status: match.status || 'pending',
+              createdAt: match.createdAt || new Date().toISOString(),
+              totalAmount: match.total,
+              shippingAddress: {
+                fullName: match.customerName,
+                phone: match.phone,
+                addressLine: match.address,
+              },
+              items: match.items || [],
+              courier: {
+                provider: "Men's Outfit Express",
+                trackingId: match.trackingToken,
+                status: 'Order Placed & Processing',
+              },
+            };
+          }
+        } catch (e) {
+          console.warn('localStorage lookup error:', e);
+        }
+      }
+
+      if (!foundOrder) {
+        throw new Error('অর্ডারের তথ্য পাওয়া যায়নি। অনুগ্রহ করে সঠিক অর্ডার নম্বর দিন।');
+      }
+
+      setOrder(foundOrder);
     } catch (err: any) {
       setError(err.message || 'ট্র্যাকিং তথ্য লোড করতে সমস্যা হয়েছে।');
       setOrder(null);
