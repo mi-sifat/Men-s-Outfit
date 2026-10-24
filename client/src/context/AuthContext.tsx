@@ -70,12 +70,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const res = await fetch('/api/auth/admin-status');
           if (res.ok) {
             const data = await res.json();
-            setHasAdminConfigured(data?.data?.hasAdmin ?? true);
+            setHasAdminConfigured(Boolean(data?.data?.hasAdmin));
+          } else {
+            const localCred = localStorage.getItem(ADMIN_CRED_HASH);
+            setHasAdminConfigured(Boolean(localCred));
           }
         } catch {
-          // If offline, check local stored admin
+          // If offline/serverless standalone, check configured admin
           const localCred = localStorage.getItem(ADMIN_CRED_HASH);
-          setHasAdminConfigured(!!localCred || true);
+          setHasAdminConfigured(Boolean(localCred));
         }
       } catch (e) {
         console.warn('Auth initialization error', e);
@@ -125,15 +128,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // 2. Fallback for standalone demo / offline testing
+      // 2. Fallback for standalone demo / offline mode: verify against user-configured credentials
       const localCredRaw = localStorage.getItem(ADMIN_CRED_HASH);
       let isValidLocal = false;
-      let localUser: AdminUser = {
-        id: 'admin-local-1',
-        name: 'Store Administrator',
-        email: 'admin@mensoutfit.com',
-        role: 'owner',
-      };
+      let localUser: AdminUser | null = null;
 
       if (localCredRaw) {
         const localCred = JSON.parse(localCredRaw);
@@ -146,20 +144,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: 'owner',
           };
         }
-      } else if (
-        (cleanEmail === 'admin@mensoutfit.com' || cleanEmail === 'admin@echooutfits.com') &&
-        (password === 'Admin@12345' || password === 'admin123' || password === 'mensoutfit2026')
-      ) {
-        // Default seed credentials for offline review
-        isValidLocal = true;
       }
 
-      if (isValidLocal) {
-        const dummyToken = `demo-token-${Date.now()}`;
+      if (isValidLocal && localUser) {
+        const sessionToken = `session-token-${Date.now()}`;
         setUser(localUser);
-        setToken(dummyToken);
+        setToken(sessionToken);
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(localUser));
-        localStorage.setItem(AUTH_TOKEN_KEY, dummyToken);
+        localStorage.setItem(AUTH_TOKEN_KEY, sessionToken);
         return { success: true, message: 'লগইন সফল হয়েছে!' };
       }
 

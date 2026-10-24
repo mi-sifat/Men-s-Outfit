@@ -52,10 +52,34 @@ function AppContent() {
     <>
       <Toaster position="bottom-right" />
       <Routes>
-        {/* Dedicated Admin Login Route (outside storefront layout) */}
+        {/* Dedicated Standalone Admin Routes (completely isolated from public storefront layout) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboardPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboardPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/*"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboardPage />
+            </AdminProtectedRoute>
+          }
+        />
 
-        {/* Storefront Layout */}
+        {/* Public Storefront Layout with Store Header, Announcement & Footer */}
         <Route path="/" element={<MainLayout cartCount={totalItems} />}>
           <Route index element={<HomePage onAddToCart={handleAddToCart} />} />
           <Route path="shop" element={<ShopPage onAddToCart={handleAddToCart} />} />
@@ -71,25 +95,7 @@ function AppContent() {
           <Route path="return-policy" element={<ReturnPolicyPage />} />
           <Route path="faq" element={<FAQPage />} />
 
-          {/* Secure Protected Admin Routes */}
-          <Route
-            path="admin"
-            element={
-              <AdminProtectedRoute>
-                <AdminDashboardPage />
-              </AdminProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/dashboard"
-            element={
-              <AdminProtectedRoute>
-                <AdminDashboardPage />
-              </AdminProtectedRoute>
-            }
-          />
-
-          {/* Fallback */}
+          {/* Fallback to Storefront Home */}
           <Route path="*" element={<HomePage onAddToCart={handleAddToCart} />} />
         </Route>
       </Routes>
