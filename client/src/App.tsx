@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage';
 import { AdminProtectedRoute } from './components/auth/AdminProtectedRoute';
 import { CartProvider, useCart } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Route-level code splitting for fast initial storefront loading
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
@@ -219,13 +220,15 @@ function AppContent() {
 
 export function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
-          <AppContent />
-        </CartProvider>
-      </AuthProvider>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <AuthProvider>
+          <CartProvider>
+            <AppContent />
+          </CartProvider>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 
