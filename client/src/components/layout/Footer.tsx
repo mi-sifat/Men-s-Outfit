@@ -145,10 +145,8 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/order-tracking" className="hover:text-[#C5A880] transition-colors">অর্ডার ট্র্যাকিং (Track Order)</Link></li>
-              <li><Link to="/admin" className="text-[#C5A880] font-semibold hover:underline">অ্যাডমিন ড্যাশবোর্ড (Admin)</Link></li>
-              <li><Link to="/size-guide" className="hover:text-[#C5A880] transition-colors">সাইজ গাইড (Size Guide)</Link></li>
               <li><Link to="/shipping-policy" className="hover:text-[#C5A880] transition-colors">ডেলিভারি পলিসি</Link></li>
-              <li><Link to="/return-policy" className="hover:text-[#C5A880] transition-colors">রিটার্ন ও রিফান্ড নীতি</Link></li>
+              <li><Link to="/return-policy" className="hover:text-[#C5A880] transition-colors">রিটার্ন ও এক্সচেঞ্জ নীতি</Link></li>
               <li><Link to="/faq" className="hover:text-[#C5A880] transition-colors">সাধারণ জিজ্ঞাসা (FAQ)</Link></li>
             </ul>
           </div>

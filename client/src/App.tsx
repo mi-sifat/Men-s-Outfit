@@ -1,22 +1,39 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
-import { ShopPage } from './pages/ShopPage';
-import { ProductDetailsPage } from './pages/ProductDetailsPage';
-import { CartPage } from './pages/CartPage';
-import { CheckoutPage } from './pages/CheckoutPage';
-import { OrderSuccessPage } from './pages/OrderSuccessPage';
-import { OrderTrackingPage } from './pages/OrderTrackingPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminProtectedRoute } from './components/auth/AdminProtectedRoute';
-import { ShippingPolicyPage } from './pages/ShippingPolicyPage';
-import { ReturnPolicyPage } from './pages/ReturnPolicyPage';
-import { FAQPage } from './pages/FAQPage';
 import { CartProvider, useCart } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
+
+// Route-level code splitting for fast initial storefront loading
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage'));
+const ShopPage = lazy(() => import('./pages/ShopPage').then((m) => ({ default: m.ShopPage })));
+const ProductDetailsPage = lazy(() => import('./pages/ProductDetailsPage').then((m) => ({ default: m.ProductDetailsPage })));
+const CartPage = lazy(() => import('./pages/CartPage').then((m) => ({ default: m.CartPage })));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage').then((m) => ({ default: m.CheckoutPage })));
+const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage').then((m) => ({ default: m.OrderSuccessPage })));
+const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage').then((m) => ({ default: m.OrderTrackingPage })));
+const ShippingPolicyPage = lazy(() => import('./pages/ShippingPolicyPage').then((m) => ({ default: m.ShippingPolicyPage })));
+const ReturnPolicyPage = lazy(() => import('./pages/ReturnPolicyPage').then((m) => ({ default: m.ReturnPolicyPage })));
+const FAQPage = lazy(() => import('./pages/FAQPage').then((m) => ({ default: m.FAQPage })));
+
+// Sleek minimal loading fallback
+const PageLoadingFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-3">
+    <div className="w-8 h-8 border-2 border-white/10 border-t-[#C5A880] rounded-full animate-spin" />
+    <span className="text-[11px] font-mono text-slate-400 tracking-widest uppercase">লোড হচ্ছে...</span>
+  </div>
+);
+
+const AdminLoadingFallback = () => (
+  <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-8 space-y-3">
+    <div className="w-9 h-9 border-2 border-slate-700 border-t-[#C5A880] rounded-full animate-spin" />
+    <span className="text-xs font-mono text-slate-400 tracking-widest uppercase">ADMIN PANEL LOADING...</span>
+  </div>
+);
 
 function AppContent() {
   const { totalItems, addToCart } = useCart();
@@ -53,12 +70,21 @@ function AppContent() {
       <Toaster position="bottom-right" />
       <Routes>
         {/* Dedicated Standalone Admin Routes (completely isolated from public storefront layout) */}
-        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route
+          path="/admin/login"
+          element={
+            <Suspense fallback={<AdminLoadingFallback />}>
+              <AdminLoginPage />
+            </Suspense>
+          }
+        />
         <Route
           path="/admin"
           element={
             <AdminProtectedRoute>
-              <AdminDashboardPage />
+              <Suspense fallback={<AdminLoadingFallback />}>
+                <AdminDashboardPage />
+              </Suspense>
             </AdminProtectedRoute>
           }
         />
@@ -66,7 +92,9 @@ function AppContent() {
           path="/admin/dashboard"
           element={
             <AdminProtectedRoute>
-              <AdminDashboardPage />
+              <Suspense fallback={<AdminLoadingFallback />}>
+                <AdminDashboardPage />
+              </Suspense>
             </AdminProtectedRoute>
           }
         />
@@ -74,7 +102,9 @@ function AppContent() {
           path="/admin/*"
           element={
             <AdminProtectedRoute>
-              <AdminDashboardPage />
+              <Suspense fallback={<AdminLoadingFallback />}>
+                <AdminDashboardPage />
+              </Suspense>
             </AdminProtectedRoute>
           }
         />
@@ -82,18 +112,102 @@ function AppContent() {
         {/* Public Storefront Layout with Store Header, Announcement & Footer */}
         <Route path="/" element={<MainLayout cartCount={totalItems} />}>
           <Route index element={<HomePage onAddToCart={handleAddToCart} />} />
-          <Route path="shop" element={<ShopPage onAddToCart={handleAddToCart} />} />
-          <Route path="category/:category" element={<ShopPage onAddToCart={handleAddToCart} />} />
-          <Route path="new-arrivals" element={<ShopPage onAddToCart={handleAddToCart} />} />
-          <Route path="sale" element={<ShopPage onAddToCart={handleAddToCart} />} />
-          <Route path="product/:slug" element={<ProductDetailsPage onAddToCart={handleAddToCart} />} />
-          <Route path="cart" element={<CartPage />} />
-          <Route path="checkout" element={<CheckoutPage />} />
-          <Route path="order-success" element={<OrderSuccessPage />} />
-          <Route path="order-tracking" element={<OrderTrackingPage />} />
-          <Route path="shipping-policy" element={<ShippingPolicyPage />} />
-          <Route path="return-policy" element={<ReturnPolicyPage />} />
-          <Route path="faq" element={<FAQPage />} />
+          <Route
+            path="shop"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ShopPage onAddToCart={handleAddToCart} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="category/:category"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ShopPage onAddToCart={handleAddToCart} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="new-arrivals"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ShopPage onAddToCart={handleAddToCart} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="sale"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ShopPage onAddToCart={handleAddToCart} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="product/:slug"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ProductDetailsPage onAddToCart={handleAddToCart} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="cart"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <CartPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="checkout"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <CheckoutPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="order-success"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <OrderSuccessPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="order-tracking"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <OrderTrackingPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="shipping-policy"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ShippingPolicyPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="return-policy"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ReturnPolicyPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="faq"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <FAQPage />
+              </Suspense>
+            }
+          />
 
           {/* Fallback to Storefront Home */}
           <Route path="*" element={<HomePage onAddToCart={handleAddToCart} />} />

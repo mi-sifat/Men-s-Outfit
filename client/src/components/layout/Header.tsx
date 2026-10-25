@@ -53,10 +53,13 @@ export const Header: React.FC<HeaderProps> = ({ cartCount = 0 }) => {
           <span>প্রিমিয়াম হেভিওয়েট সুতি ফেব্রিক</span>
         </span>
         <span className="hidden md:inline text-white/20">•</span>
-        <span className="hidden md:flex items-center gap-1 text-slate-400">
+        <a 
+          href={`tel:${(settings.storePhone || '01700000000').replace(/[^0-9+]/g, '')}`} 
+          className="hidden md:flex items-center gap-1.5 text-slate-400 hover:text-[#C5A880] transition-colors"
+        >
           <PhoneCall className="w-3 h-3 text-[#C5A880]" />
-          <span>হটলাইন: 01700-000000</span>
-        </span>
+          <span>হটলাইন: {settings.storePhone || '01700-000000'}</span>
+        </a>
       </div>
 
       {/* Main Nav Header */}
