@@ -8,9 +8,20 @@ export const getPublicSettings = async (_req: Request, res: Response) => {
     settings = await StoreSettings.create({});
   }
 
-  // Filter out inactive banners for public view
+  const now = new Date();
+  // Filter out inactive banners and check date windows if scheduled
   const activeBanners = (settings.banners || [])
-    .filter((b) => b.isActive)
+    .filter((b) => {
+      if (!b.isActive) return false;
+      if (b.startAt && new Date(b.startAt) > now) return false;
+      if (b.endAt && new Date(b.endAt) < now) return false;
+      return true;
+    })
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  // Filter and sort active homepage sections
+  const activeSections = (settings.homepageSections || [])
+    .filter((s) => s.isActive)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   res.status(200).json({
@@ -32,6 +43,7 @@ export const getPublicSettings = async (_req: Request, res: Response) => {
       isOnlinePaymentEnabled: settings.isOnlinePaymentEnabled,
       socialLinks: settings.socialLinks,
       banners: activeBanners,
+      homepageSections: activeSections,
       seo: settings.seo,
     },
   });

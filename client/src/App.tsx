@@ -1,5 +1,5 @@
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
@@ -20,6 +20,19 @@ const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage').then((m
 const ShippingPolicyPage = lazy(() => import('./pages/ShippingPolicyPage').then((m) => ({ default: m.ShippingPolicyPage })));
 const ReturnPolicyPage = lazy(() => import('./pages/ReturnPolicyPage').then((m) => ({ default: m.ReturnPolicyPage })));
 const FAQPage = lazy(() => import('./pages/FAQPage').then((m) => ({ default: m.FAQPage })));
+const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
+const ContactPage = lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
+
+// Automatic Scroll To Top on route change (solves related product clicking scroll issue)
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+
+  return null;
+}
 
 // Sleek minimal loading fallback
 const PageLoadingFallback = () => (
@@ -209,6 +222,22 @@ function AppContent() {
               </Suspense>
             }
           />
+          <Route
+            path="about"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <AboutPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="contact"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ContactPage />
+              </Suspense>
+            }
+          />
 
           {/* Fallback to Storefront Home */}
           <Route path="*" element={<HomePage onAddToCart={handleAddToCart} />} />
@@ -222,6 +251,7 @@ export function App() {
   return (
     <ThemeProvider>
       <Router>
+        <ScrollToTop />
         <AuthProvider>
           <CartProvider>
             <AppContent />

@@ -7,11 +7,13 @@ import paymentRoutes from './payment.routes';
 import courierRoutes from './courier.routes';
 import adminRoutes from './admin.routes';
 import settingsRoutes from './settings.routes';
+import categoryRoutes from './category.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
+router.use('/categories', categoryRoutes);
 router.use('/orders', orderRoutes);
 router.use('/coupons', couponRoutes);
 router.use('/payments', paymentRoutes);

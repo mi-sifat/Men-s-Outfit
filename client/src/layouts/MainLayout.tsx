@@ -9,7 +9,7 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ cartCount = 0 }) => {
   return (
-    <div className="min-h-screen flex flex-col bg-[#080C14] text-slate-100 selection:bg-[#C5A880] selection:text-black">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-[#080C14] text-slate-900 dark:text-slate-100 selection:bg-[#2563EB] selection:text-white dark:selection:bg-[#C5A880] dark:selection:text-black transition-colors duration-200">
       <Header cartCount={cartCount} />
       <main className="flex-1">
         <Outlet />

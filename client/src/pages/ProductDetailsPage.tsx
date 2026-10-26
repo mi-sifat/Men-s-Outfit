@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   Star, 
@@ -37,6 +37,17 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ onAddToC
   const [selectedColor, setSelectedColor] = useState<string>(product.variants[0]?.color || 'Jet Black');
   const [quantity, setQuantity] = useState<number>(1);
   const [showSizeModal, setShowSizeModal] = useState<boolean>(false);
+
+  // Reset image, size, quantity and scroll to top when slug/product changes (fixes related products clicking issue)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (product && product.images) {
+      setSelectedImage(product.images[0]);
+      setSelectedSize(product.variants[0]?.size || 'M');
+      setSelectedColor(product.variants[0]?.color || 'Jet Black');
+      setQuantity(1);
+    }
+  }, [slug]);
 
   // Find matching variant
   const currentVariant = product.variants.find(

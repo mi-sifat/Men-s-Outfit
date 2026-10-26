@@ -6,8 +6,12 @@ export interface ICategory extends Document {
   slug: string;
   description?: string;
   image?: string;
+  icon?: string;
   isActive: boolean;
   order: number;
+  showOnHome: boolean;
+  showInNav: boolean;
+  parentCategory?: mongoose.Types.ObjectId;
 }
 
 const CategorySchema = new Schema<ICategory>(
@@ -17,8 +21,12 @@ const CategorySchema = new Schema<ICategory>(
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     description: { type: String },
     image: { type: String },
+    icon: { type: String },
     isActive: { type: Boolean, default: true },
     order: { type: Number, default: 0 },
+    showOnHome: { type: Boolean, default: true },
+    showInNav: { type: Boolean, default: true },
+    parentCategory: { type: Schema.Types.ObjectId, ref: 'Category' },
   },
   { timestamps: true }
 );

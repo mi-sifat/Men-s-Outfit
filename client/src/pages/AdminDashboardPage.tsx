@@ -41,7 +41,8 @@ import {
   Store,
   Calendar,
   Check,
-  ChevronDown
+  ChevronDown,
+  Sliders
 } from 'lucide-react';
 import { formatPrice } from '../lib/utils';
 import { Button } from '../components/ui/Button';
@@ -50,6 +51,9 @@ import { getAllProducts, saveProduct, deleteProduct } from '../data/productStore
 import { getLocalStoreSettings, saveLocalStoreSettings } from '../data/settingsStore';
 import type { StoreSettingsData, BannerItem } from '../data/settingsStore';
 import type { Product } from '../types';
+import { CategoryManager } from '../components/admin/CategoryManager';
+import { HomepageSectionManager } from '../components/admin/HomepageSectionManager';
+import { BannerManager } from '../components/admin/BannerManager';
 
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout, changePassword } = useAuth();
@@ -64,6 +68,7 @@ export const AdminDashboardPage: React.FC = () => {
     | 'orders'
     | 'coupons'
     | 'banners'
+    | 'sections'
     | 'appearance'
     | 'info'
     | 'social'
@@ -440,6 +445,7 @@ export const AdminDashboardPage: React.FC = () => {
       group: 'WEBSITE MANAGEMENT',
       items: [
         { id: 'banners', label: 'Homepage Banners', icon: ImageIcon, badge: banners.length },
+        { id: 'sections', label: 'Homepage Sections', icon: Sliders },
         { id: 'appearance', label: 'Appearance & Themes', icon: Palette },
         { id: 'info', label: 'Website Information', icon: Info },
         { id: 'social', label: 'Social Links', icon: Share2 },
@@ -471,6 +477,7 @@ export const AdminDashboardPage: React.FC = () => {
       case 'orders': return 'Customer Orders';
       case 'coupons': return 'Promotional Coupons';
       case 'banners': return 'Homepage Hero Banners';
+      case 'sections': return 'Homepage Section Manager';
       case 'appearance': return 'Branding & Aesthetics';
       case 'info': return 'Store Info & Logo';
       case 'social': return 'Social Media Links';
@@ -1025,6 +1032,9 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           )}
 
+          {/* 2.1. CATEGORIES MANAGEMENT */}
+          {activeTab === 'categories' && <CategoryManager />}
+
           {/* 3. INVENTORY */}
           {activeTab === 'inventory' && (
             <div className="space-y-4">
@@ -1232,70 +1242,10 @@ export const AdminDashboardPage: React.FC = () => {
           )}
 
           {/* 5. HOMEPAGE BANNERS */}
-          {activeTab === 'banners' && (
-            <div className="space-y-6">
-              <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Homepage Hero Banners</h2>
-                  <p className="text-xs text-slate-500">Add, edit, reorder, or toggle promotional carousel banners</p>
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setShowAddBannerModal(true)}
-                  className="gap-2 bg-slate-900 text-white hover:bg-black cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add New Banner</span>
-                </Button>
-              </div>
+          {activeTab === 'banners' && <BannerManager />}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {banners.map((b) => (
-                  <div key={b.id} className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col justify-between">
-                    <div>
-                      <div className="h-44 w-full bg-slate-100 relative overflow-hidden">
-                        <img
-                          src={b.imageUrl}
-                          alt={b.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-3 right-3 flex items-center gap-2">
-                          <button
-                            onClick={() => handleToggleBanner(b.id)}
-                            className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                              b.isActive
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-slate-700 text-slate-200'
-                            }`}
-                          >
-                            {b.isActive ? 'Active' : 'Disabled'}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="p-4 space-y-1">
-                        <h4 className="font-bold text-sm text-slate-900">{b.title}</h4>
-                        <p className="text-xs text-slate-500">{b.subtitle}</p>
-                        <p className="text-[11px] text-[#C5A880] font-mono pt-1">
-                          Button: "{b.buttonText}" &rarr; {b.linkUrl}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-4 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-xs text-slate-400">Order: #{b.order}</span>
-                      <button
-                        onClick={() => handleDeleteBanner(b.id)}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete Banner</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* 5.1. HOMEPAGE SECTIONS */}
+          {activeTab === 'sections' && <HomepageSectionManager />}
 
           {/* 6. WEBSITE INFO & BRANDING */}
           {(activeTab === 'info' || activeTab === 'appearance') && (

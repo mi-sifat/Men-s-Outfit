@@ -29,9 +29,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [language, setLanguageState] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem('mens_outfit_lang');
-      return saved === 'en' ? 'en' : 'bn';
+      return saved === 'bn' ? 'bn' : 'en';
     } catch {
-      return 'bn';
+      return 'en';
     }
   });
 
