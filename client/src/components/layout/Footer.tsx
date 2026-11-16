@@ -135,7 +135,7 @@ export const Footer: React.FC = () => {
               <img
                 src={settings.logoUrl || '/logo.png'}
                 alt={settings.storeName || "Men's Outfit"}
-                className="h-11 sm:h-12 w-auto max-w-[200px] object-contain"
+                className="h-12 sm:h-14 w-auto max-w-[220px] object-contain"
               />
             </Link>
             <p className="text-sm text-slate-200 leading-relaxed max-w-sm mb-6">

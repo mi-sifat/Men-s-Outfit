@@ -95,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({ cartCount = 0 }) => {
               <img
                 src={settings.logoUrl || '/logo.png'}
                 alt={settings.storeName || "Men's Outfit"}
-                className="h-10 sm:h-12 lg:h-14 w-auto max-w-[170px] sm:max-w-[210px] lg:max-w-[240px] object-contain transition-transform group-hover:scale-102"
+                className="h-12 sm:h-14 lg:h-16 w-auto max-w-[200px] sm:max-w-[240px] lg:max-w-[280px] object-contain transition-transform group-hover:scale-105 drop-shadow-sm"
               />
             </Link>
           </div>

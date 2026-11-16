@@ -34,7 +34,8 @@ export const getCategories = async (req: Request, res: Response) => {
 export const getCategoryBySlug = async (req: Request, res: Response) => {
   const { slug } = req.params;
 
-  const category = await Category.findOne({ slug: slug.toLowerCase() })
+  const cleanSlug = typeof slug === 'string' ? slug.toLowerCase() : Array.isArray(slug) ? slug[0].toLowerCase() : '';
+  const category = await Category.findOne({ slug: cleanSlug })
     .populate('parentCategory', 'name nameBn slug')
     .lean();
 
