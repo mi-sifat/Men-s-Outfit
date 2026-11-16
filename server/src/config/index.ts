@@ -6,7 +6,10 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const config = {
   // General
-  nodeEnv: process.env.NODE_ENV || 'development',
+  // Fail closed when deployment forgot to set NODE_ENV; local .env.example sets development.
+  get nodeEnv() {
+    return process.env.NODE_ENV || 'production';
+  },
   port: parseInt(process.env.PORT || '5000', 10),
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:5000/api',
@@ -91,5 +94,12 @@ const config = {
     return this.nodeEnv === 'development';
   },
 } as const;
+
+if (
+  config.isProduction &&
+  (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32 || /change-in-production|your-/i.test(process.env.JWT_SECRET))
+) {
+  throw new Error('Production requires a strong JWT_SECRET of at least 32 characters.');
+}
 
 export default config;

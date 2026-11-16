@@ -15,6 +15,21 @@ export const createOrder = async (req: Request, res: Response) => {
   if (!items || !Array.isArray(items) || items.length === 0) {
     throw AppError.badRequest('কার্টে কোনো পণ্য নেই।');
   }
+  if (items.length > 50 || items.some((item) => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100)) {
+    throw AppError.badRequest('পণ্যের পরিমাণ সঠিক নয়।');
+  }
+  if (!Object.values(PaymentMethod).includes(paymentMethod)) {
+    throw AppError.badRequest('পেমেন্ট পদ্ধতি সঠিক নয়।');
+  }
+
+  // Combine duplicate cart lines so stock checks use the true requested quantity.
+  const consolidatedItems = [...items.reduce((map: Map<string, any>, item: any) => {
+    const key = `${item.productId}:${item.size}:${item.color}`;
+    const existing = map.get(key);
+    if (existing) existing.quantity += item.quantity;
+    else map.set(key, { ...item });
+    return map;
+  }, new Map()).values()];
 
   if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.phone || !shippingAddress.addressLine || !shippingAddress.division) {
     throw AppError.badRequest('সঠিক ডেলিভারি ঠিকানা ও মোবাইল নম্বর প্রদান করুন।');
@@ -30,7 +45,7 @@ export const createOrder = async (req: Request, res: Response) => {
   let itemsSubtotal = 0;
   const verifiedOrderItems: any[] = [];
 
-  for (const item of items) {
+  for (const item of consolidatedItems) {
     const product = await Product.findById(item.productId);
     if (!product || !product.isPublished) {
       throw AppError.badRequest(`পণ্যটি উপলব্ধ নেই: ${item.title || 'অজানা পণ্য'}`);
@@ -85,8 +100,8 @@ export const createOrder = async (req: Request, res: Response) => {
       startDate: { $lte: new Date() },
       endDate: { $gte: new Date() },
     });
-
-    if (coupon) {
+    if (!coupon) throw AppError.badRequest('অবৈধ বা মেয়াদোত্তীর্ণ কুপন কোড।');
+    {
       if (itemsSubtotal >= coupon.minOrderAmount) {
         if (coupon.discountType === 'percentage') {
           discountAmount = Math.round((itemsSubtotal * coupon.discountValue) / 100);
@@ -102,75 +117,105 @@ export const createOrder = async (req: Request, res: Response) => {
         }
 
         appliedCouponCode = coupon.code;
-        coupon.usedCount += 1;
-        await coupon.save();
       }
     }
   }
 
   const payableTotal = Math.max(0, itemsSubtotal + deliveryCharge - discountAmount);
 
-  // Generate unique order number (EO-YEAR-XXXXX)
-  const orderCount = await Order.countDocuments();
+  // Random suffix prevents collisions under concurrent checkouts and avoids exposing order volume.
   const year = new Date().getFullYear();
-  const orderNumber = `EO-${year}-${String(orderCount + 1).padStart(5, '0')}`;
+  const orderNumber = `EO-${year}-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
 
   // Generate secure high-entropy tracking token
   const trackingToken = crypto.randomBytes(16).toString('hex');
 
-  // Atomic stock reduction
-  for (const item of items) {
-    await Product.updateOne(
-      {
-        _id: item.productId,
-        'variants.size': item.size,
-        'variants.color': item.color,
-      },
-      {
-        $inc: { 'variants.$.stock': -item.quantity },
+  // Reserve each variant atomically and restore earlier reservations if any step fails.
+  const reservedItems: typeof consolidatedItems = [];
+  let couponReserved = false;
+  try {
+    for (const item of consolidatedItems) {
+      const result = await Product.updateOne(
+        {
+          _id: item.productId,
+          variants: { $elemMatch: { size: item.size, color: item.color, stock: { $gte: item.quantity } } },
+        },
+        { $inc: { 'variants.$.stock': -item.quantity } }
+      );
+      if (result.modifiedCount !== 1) {
+        throw AppError.conflict('স্টক এইমাত্র পরিবর্তিত হয়েছে। কার্ট আপডেট করে আবার চেষ্টা করুন।');
       }
-    );
-  }
+      reservedItems.push(item);
+    }
 
-  // Create Order in DB
-  const order = await Order.create({
-    orderNumber,
-    trackingToken,
-    customer: (req as any).user ? (req as any).user.userId : undefined,
-    items: verifiedOrderItems,
-    shippingAddress,
-    itemsSubtotal,
-    deliveryCharge,
-    discountAmount,
-    couponCode: appliedCouponCode,
-    payableTotal,
-    status: OrderStatus.PENDING,
-    paymentMethod,
-    paymentStatus: PaymentStatus.PENDING,
-    courierProvider: CourierProvider.MANUAL,
-    customerNotes,
-  });
+    if (appliedCouponCode) {
+      const couponReservation = await Coupon.updateOne(
+        {
+          code: appliedCouponCode,
+          isActive: true,
+          startDate: { $lte: new Date() },
+          endDate: { $gte: new Date() },
+          $expr: { $or: [
+            { $eq: [{ $ifNull: ['$usageLimit', null] }, null] },
+            { $lt: ['$usedCount', '$usageLimit'] },
+          ] },
+        },
+        { $inc: { usedCount: 1 } }
+      );
+      if (couponReservation.modifiedCount !== 1) {
+        throw AppError.conflict('এই কুপনের ব্যবহারের সীমা শেষ হয়েছে।');
+      }
+      couponReserved = true;
+    }
 
-  // Trigger Bangladeshi SMS notification
-  NotificationService.notifyOrderCreated({
-    orderNumber: order.orderNumber,
-    phone: shippingAddress.phone,
-    total: order.payableTotal,
-  }).catch(() => {});
+    const order = await Order.create({
+      orderNumber,
+      trackingToken,
+      customer: (req as any).user ? (req as any).user.userId : undefined,
+      items: verifiedOrderItems,
+      shippingAddress,
+      itemsSubtotal,
+      deliveryCharge,
+      discountAmount,
+      couponCode: appliedCouponCode,
+      payableTotal,
+      status: OrderStatus.PENDING,
+      paymentMethod,
+      paymentStatus: PaymentStatus.PENDING,
+      courierProvider: CourierProvider.MANUAL,
+      customerNotes,
+    });
 
-  res.status(201).json({
-    success: true,
-    message: 'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!',
-    data: {
-      orderId: order._id,
+    // Trigger Bangladeshi SMS notification
+    NotificationService.notifyOrderCreated({
       orderNumber: order.orderNumber,
-      trackingToken: order.trackingToken,
-      payableTotal: order.payableTotal,
-      deliveryCharge: order.deliveryCharge,
-      paymentMethod: order.paymentMethod,
-      paymentStatus: order.paymentStatus,
-    },
-  });
+      phone: shippingAddress.phone,
+      total: order.payableTotal,
+    }).catch(() => {});
+
+    return res.status(201).json({
+      success: true,
+      message: 'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!',
+      data: {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        trackingToken: order.trackingToken,
+        payableTotal: order.payableTotal,
+        deliveryCharge: order.deliveryCharge,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+      },
+    });
+  } catch (error) {
+    await Promise.all(reservedItems.map((item) => Product.updateOne(
+      { _id: item.productId, 'variants.size': item.size, 'variants.color': item.color },
+      { $inc: { 'variants.$.stock': item.quantity } }
+    )));
+    if (couponReserved && appliedCouponCode) {
+      await Coupon.updateOne({ code: appliedCouponCode, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
+    }
+    throw error;
+  }
 };
 
 // PUT /api/orders/:id/status (Admin status change with state machine and stock restoration)
@@ -233,12 +278,15 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 // GET /api/orders/track/:token (Public tracking)
 export const trackOrder = async (req: Request, res: Response) => {
   const token = String(req.params.token);
+  if (!/^[a-f0-9]{32}$/i.test(token)) {
+    throw AppError.notFound('কোনো অর্ডার পাওয়া যায়নি। সঠিক ট্র্যাকিং লিংক ব্যবহার করুন।');
+  }
 
-  const order = await Order.findOne({
-    $or: [{ trackingToken: token }, { orderNumber: token.toUpperCase() }],
-  })
-    .select('-customer')
+  const order = await Order.findOne({ trackingToken: token })
+    .select('orderNumber status courierProvider courierTrackingCode createdAt confirmedAt shippedAt deliveredAt')
     .lean();
+
+  res.setHeader('Cache-Control', 'no-store');
 
   if (!order) {
     throw AppError.notFound('কোনো অর্ডার পাওয়া যায়নি। অনুগ্রহ করে সঠিক অর্ডার নম্বর বা ট্র্যাকিং লিংক চেক করুন।');

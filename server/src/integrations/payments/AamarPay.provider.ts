@@ -21,6 +21,7 @@ export class AamarPayProvider implements IPaymentProvider {
     const transactionId = `AAMAR-${Date.now()}-${order.orderNumber}`;
 
     if (!config.aamarpay.storeId || !config.aamarpay.signatureKey) {
+      if (config.isProduction) throw new Error('Production payment credentials are not configured.');
       logger.info(`[MOCK aamarPay] Initiating session for order ${order.orderNumber}`);
       return {
         paymentUrl: `${config.clientUrl}/order-success?orderNumber=${order.orderNumber}&paymentStatus=paid&txn=${transactionId}`,
@@ -66,6 +67,9 @@ export class AamarPayProvider implements IPaymentProvider {
     const transactionId = payload.mer_txnid;
 
     if (!config.aamarpay.storeId || !config.aamarpay.signatureKey) {
+      if (config.isProduction) {
+        return { isValid: false, status: 'failed', amount: 0, currency: 'BDT', transactionId: transactionId || '', rawResponse: {} };
+      }
       return {
         isValid: true,
         status: 'paid',

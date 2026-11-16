@@ -11,14 +11,14 @@
 - **অ্যাডমিন তৈরি / পাসওয়ার্ড রিসেট**: সার্ভার ডিরেক্টরিতে টার্মিনালে রান করুন: `npm run create-admin`
 
 ### 📚 সম্পূর্ণ বাংলা বিজনেস ও ম্যানেজমেন্ট হ্যান্ডবুক:
-1. 🌐 [ভার্সেল ডিপ্লয়মেন্ট সহজ গাইড (VERCEL_DEPLOYMENT_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/VERCEL_DEPLOYMENT_BN.md)
-2. 📖 [অ্যাডমিন ও বিজনেস ম্যানেজমেন্ট গাইড (ADMIN_MANAGEMENT_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/ADMIN_MANAGEMENT_BN.md)
-3. 🗄️ [ডাটাবেস স্ট্রাকচার ও ব্যাকআপ গাইড (DATABASE_GUIDE_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/DATABASE_GUIDE_BN.md)
-4. 📦 [অর্ডার প্রসেসিং ও কুরিয়ার লাইফসাইকেল (ORDER_MANAGEMENT_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/ORDER_MANAGEMENT_BN.md)
-5. 🎟️ [কুপন, ডিসকাউন্ট ও সিক্রেট টোকেন গাইড (COUPON_AND_TOKEN_GUIDE_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/COUPON_AND_TOKEN_GUIDE_BN.md)
-6. 💳 [পেমেন্ট গেটওয়ে ও কুরিয়ার সেটআপ (PAYMENT_COURIER_GUIDE_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/PAYMENT_COURIER_GUIDE_BN.md)
-7. 📊 [সেলস, প্রফিট ও ইনভেন্টরি রিপোর্ট (SALES_REPORTS_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/SALES_REPORTS_BN.md)
-8. ✅ [প্রতিদিনের বিজনেস অপারেশন চেকলিস্ট (DAILY_OPERATIONS_CHECKLIST_BN.md)](file:///f:/OneDrive/Desktop/Antigrabity/E-com-mern-1/docs/DAILY_OPERATIONS_CHECKLIST_BN.md)
+1. 🌐 [ভার্সেল ডিপ্লয়মেন্ট সহজ গাইড](docs/VERCEL_DEPLOYMENT_BN.md)
+2. 📖 [অ্যাডমিন ও বিজনেস ম্যানেজমেন্ট গাইড](docs/ADMIN_MANAGEMENT_BN.md)
+3. 🗄️ [ডাটাবেস স্ট্রাকচার ও ব্যাকআপ গাইড](docs/DATABASE_GUIDE_BN.md)
+4. 📦 [অর্ডার প্রসেসিং ও কুরিয়ার লাইফসাইকেল](docs/ORDER_MANAGEMENT_BN.md)
+5. 🎟️ [কুপন, ডিসকাউন্ট ও সিক্রেট টোকেন গাইড](docs/COUPON_AND_TOKEN_GUIDE_BN.md)
+6. 💳 [পেমেন্ট গেটওয়ে ও কুরিয়ার সেটআপ](docs/PAYMENT_COURIER_GUIDE_BN.md)
+7. 📊 [সেলস, প্রফিট ও ইনভেন্টরি রিপোর্ট](docs/SALES_REPORTS_BN.md)
+8. ✅ [প্রতিদিনের বিজনেস অপারেশন চেকলিস্ট](docs/DAILY_OPERATIONS_CHECKLIST_BN.md)
 
 ---
 

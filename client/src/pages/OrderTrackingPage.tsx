@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, Package, Truck, CheckCircle2, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { Search, Package, Truck, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { formatPrice } from '../lib/utils';
 
 export const OrderTrackingPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -17,61 +16,12 @@ export const OrderTrackingPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      let foundOrder: any = null;
-
-      try {
-        const res = await fetch(`/api/orders/track/${encodeURIComponent(searchToken.trim())}`);
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await res.json();
-          if (res.ok && data?.data) {
-            foundOrder = data.data;
-          }
-        }
-      } catch (networkErr) {
-        // Backend offline or non-responsive
+      const res = await fetch(`/api/orders/track/${encodeURIComponent(searchToken.trim())}`);
+      const data = await res.json();
+      if (!res.ok || !data?.data) {
+        throw new Error(data?.message || 'অর্ডারের তথ্য পাওয়া যায়নি। সঠিক ট্র্যাকিং কোড দিন।');
       }
-
-      // If backend not available, check local orders stored in localStorage
-      if (!foundOrder) {
-        try {
-          const stored = JSON.parse(localStorage.getItem('mens_outfit_orders') || '[]');
-          const query = searchToken.trim().toLowerCase();
-          const match = stored.find(
-            (o: any) =>
-              o.orderNumber?.toLowerCase() === query ||
-              o.trackingToken?.toLowerCase() === query
-          );
-
-          if (match) {
-            foundOrder = {
-              orderNumber: match.orderNumber,
-              status: match.status || 'pending',
-              createdAt: match.createdAt || new Date().toISOString(),
-              totalAmount: match.total,
-              shippingAddress: {
-                fullName: match.customerName,
-                phone: match.phone,
-                addressLine: match.address,
-              },
-              items: match.items || [],
-              courier: {
-                provider: "Men's Outfit Express",
-                trackingId: match.trackingToken,
-                status: 'Order Placed & Processing',
-              },
-            };
-          }
-        } catch (e) {
-          console.warn('localStorage lookup error:', e);
-        }
-      }
-
-      if (!foundOrder) {
-        throw new Error('অর্ডারের তথ্য পাওয়া যায়নি। অনুগ্রহ করে সঠিক অর্ডার নম্বর দিন।');
-      }
-
-      setOrder(foundOrder);
+      setOrder(data.data);
     } catch (err: any) {
       setError(err.message || 'ট্র্যাকিং তথ্য লোড করতে সমস্যা হয়েছে।');
       setOrder(null);
@@ -105,7 +55,7 @@ export const OrderTrackingPage: React.FC = () => {
           অর্ডার ও পার্সেল ট্র্যাকিং
         </h1>
         <p className="text-slate-400 text-sm max-w-md mx-auto">
-          আপনার অর্ডার নম্বর (যেমন: EO-2026-00001) বা ট্র্যাকিং লিংক প্রদান করে পার্সেলের বর্তমান অবস্থান জানুন।
+          অর্ডার নিশ্চিত হওয়ার পর পাওয়া ব্যক্তিগত ট্র্যাকিং কোড দিয়ে পার্সেলের বর্তমান অবস্থা জানুন।
         </p>
       </div>
 
@@ -115,7 +65,7 @@ export const OrderTrackingPage: React.FC = () => {
           <Search className="w-5 h-5 absolute left-3.5 top-3.5 text-slate-400" />
           <input
             type="text"
-            placeholder="অর্ডার নম্বর বা ট্র্যাকিং কোড লিখুন..."
+            placeholder="ব্যক্তিগত ট্র্যাকিং কোড লিখুন..."
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && fetchTracking(tokenInput)}
@@ -203,18 +153,6 @@ export const OrderTrackingPage: React.FC = () => {
               <span className="text-slate-400 block mb-0.5">কুরিয়ার ট্র্যাকিং কোড:</span>
               <span className="font-mono text-[#C5A880] font-bold">
                 {order.courierTrackingCode || 'শীঘ্রই আপডেট হবে'}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400 block mb-0.5">ডেলিভারি ঠিকানা:</span>
-              <span className="text-slate-300">
-                {order.shippingAddress?.fullName}, {order.shippingAddress?.addressLine}, {order.shippingAddress?.district}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400 block mb-0.5">সর্বমোট মূল্য (COD):</span>
-              <span className="font-mono text-white font-bold text-sm">
-                {formatPrice(order.payableTotal)}
               </span>
             </div>
           </div>

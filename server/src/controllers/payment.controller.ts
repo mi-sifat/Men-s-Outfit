@@ -23,6 +23,9 @@ export const initiatePayment = async (req: Request, res: Response) => {
   if (order.paymentStatus === PaymentStatus.PAID) {
     throw AppError.badRequest('এই অর্ডারের মূল্য ইতিমধ্যে পরিশোধিত হয়েছে।');
   }
+  if (![PaymentMethod.SSLCOMMERZ, PaymentMethod.AAMARPAY].includes(provider)) {
+    throw AppError.badRequest('সমর্থিত পেমেন্ট গেটওয়ে নির্বাচন করুন।');
+  }
 
   const orderPayload = {
     orderNumber: order.orderNumber,
@@ -60,21 +63,27 @@ export const initiatePayment = async (req: Request, res: Response) => {
 export const handleSSLCommerzSuccess = async (req: Request, res: Response) => {
   const verification = await sslcommerz.verifyPayment(req.body);
 
-  if (verification.isValid) {
-    const payment = await Payment.findOne({ transactionId: verification.transactionId });
-    if (payment) {
-      payment.status = PaymentStatus.PAID;
-      payment.valId = req.body.val_id;
-      payment.bankTransactionId = verification.bankTransactionId;
-      payment.cardType = verification.cardType;
-      payment.verifiedAt = new Date();
-      payment.rawResponse = verification.rawResponse;
-      await payment.save();
+  if (verification.isValid && verification.status === 'paid' && verification.currency === 'BDT') {
+    const payment = await Payment.findOne({ transactionId: verification.transactionId, provider: PaymentMethod.SSLCOMMERZ });
+    if (payment && Math.abs(verification.amount - payment.amount) < 0.01) {
+      const order = await Order.findById(payment.order);
+      if (!order || Math.abs(order.payableTotal - payment.amount) >= 0.01) {
+        return res.redirect(`${config.clientUrl}/checkout?paymentError=verification_failed`);
+      }
+      if (payment.status !== PaymentStatus.PAID) {
+        payment.status = PaymentStatus.PAID;
+        payment.valId = req.body.val_id;
+        payment.bankTransactionId = verification.bankTransactionId;
+        payment.cardType = verification.cardType;
+        payment.verifiedAt = new Date();
+        payment.rawResponse = verification.rawResponse;
+        await payment.save();
 
-      // Update Order Payment Status
-      await Order.findByIdAndUpdate(payment.order, {
-        paymentStatus: PaymentStatus.PAID,
-      });
+        // Update Order Payment Status
+        await Order.findByIdAndUpdate(payment.order, {
+          paymentStatus: PaymentStatus.PAID,
+        });
+      }
 
       return res.redirect(`${config.clientUrl}/order-success?orderNumber=${payment.orderNumber}&paymentStatus=paid`);
     }
@@ -87,7 +96,10 @@ export const handleSSLCommerzSuccess = async (req: Request, res: Response) => {
 export const handleSSLCommerzFail = async (req: Request, res: Response) => {
   const { tran_id } = req.body;
   if (tran_id) {
-    await Payment.findOneAndUpdate({ transactionId: tran_id }, { status: PaymentStatus.FAILED });
+    await Payment.findOneAndUpdate(
+      { transactionId: tran_id, provider: PaymentMethod.SSLCOMMERZ, status: PaymentStatus.PENDING },
+      { status: PaymentStatus.FAILED }
+    );
   }
   res.redirect(`${config.clientUrl}/checkout?paymentError=failed`);
 };
@@ -96,7 +108,56 @@ export const handleSSLCommerzFail = async (req: Request, res: Response) => {
 export const handleSSLCommerzCancel = async (req: Request, res: Response) => {
   const { tran_id } = req.body;
   if (tran_id) {
-    await Payment.findOneAndUpdate({ transactionId: tran_id }, { status: PaymentStatus.CANCELLED });
+    await Payment.findOneAndUpdate(
+      { transactionId: tran_id, provider: PaymentMethod.SSLCOMMERZ, status: PaymentStatus.PENDING },
+      { status: PaymentStatus.CANCELLED }
+    );
   }
   res.redirect(`${config.clientUrl}/checkout?paymentError=cancelled`);
+};
+
+// aamarPay callbacks are verified server-to-server before changing payment state.
+export const handleAamarPaySuccess = async (req: Request, res: Response) => {
+  const verification = await aamarpay.verifyPayment(req.body);
+  if (verification.isValid && verification.status === 'paid' && verification.currency === 'BDT') {
+    const payment = await Payment.findOne({ transactionId: verification.transactionId, provider: PaymentMethod.AAMARPAY });
+    if (payment && Math.abs(verification.amount - payment.amount) < 0.01) {
+      const order = await Order.findById(payment.order);
+      if (order && Math.abs(order.payableTotal - payment.amount) < 0.01) {
+        if (payment.status !== PaymentStatus.PAID) {
+          payment.status = PaymentStatus.PAID;
+          payment.bankTransactionId = verification.bankTransactionId;
+          payment.cardType = verification.cardType;
+          payment.verifiedAt = new Date();
+          payment.rawResponse = verification.rawResponse;
+          await payment.save();
+          await Order.findByIdAndUpdate(payment.order, { paymentStatus: PaymentStatus.PAID });
+        }
+        return res.redirect(`${config.clientUrl}/order-success?orderNumber=${payment.orderNumber}&paymentStatus=paid`);
+      }
+    }
+  }
+  return res.redirect(`${config.clientUrl}/checkout?paymentError=verification_failed`);
+};
+
+export const handleAamarPayFail = async (req: Request, res: Response) => {
+  const verification = await aamarpay.verifyPayment(req.body);
+  if (verification.transactionId) {
+    await Payment.findOneAndUpdate(
+      { transactionId: verification.transactionId, provider: PaymentMethod.AAMARPAY, status: PaymentStatus.PENDING },
+      { status: PaymentStatus.FAILED }
+    );
+  }
+  return res.redirect(`${config.clientUrl}/checkout?paymentError=failed`);
+};
+
+export const handleAamarPayCancel = async (req: Request, res: Response) => {
+  const verification = await aamarpay.verifyPayment(req.body);
+  if (verification.transactionId) {
+    await Payment.findOneAndUpdate(
+      { transactionId: verification.transactionId, provider: PaymentMethod.AAMARPAY, status: PaymentStatus.PENDING },
+      { status: PaymentStatus.CANCELLED }
+    );
+  }
+  return res.redirect(`${config.clientUrl}/checkout?paymentError=cancelled`);
 };

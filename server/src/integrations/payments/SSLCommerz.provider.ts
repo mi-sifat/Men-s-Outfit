@@ -22,6 +22,7 @@ export class SSLCommerzProvider implements IPaymentProvider {
 
     // If live credentials are not set, return simulated gateway session for dev test
     if (!config.sslcommerz.storeId || !config.sslcommerz.storePassword) {
+      if (config.isProduction) throw new Error('Production payment credentials are not configured.');
       logger.info(`[MOCK SSLCOMMERZ] Initiating session for order ${order.orderNumber} (Amount: ৳${order.amount})`);
       return {
         paymentUrl: `${config.clientUrl}/order-success?orderNumber=${order.orderNumber}&paymentStatus=paid&txn=${transactionId}`,
@@ -76,6 +77,9 @@ export class SSLCommerzProvider implements IPaymentProvider {
     const valId = payload.val_id;
 
     if (!config.sslcommerz.storeId || !config.sslcommerz.storePassword) {
+      if (config.isProduction) {
+        return { isValid: false, status: 'failed', amount: 0, currency: 'BDT', transactionId: payload.tran_id || '', rawResponse: {} };
+      }
       // Mock validation mode
       return {
         isValid: true,
