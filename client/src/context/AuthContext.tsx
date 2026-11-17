@@ -33,21 +33,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize session
   useEffect(() => {
+    let isMounted = true;
     const initAuth = async () => {
       try {
-        // Remove credentials left by the previous browser-only admin fallback.
         localStorage.removeItem('mens_outfit_local_admin_cred');
-        // Try backend verification first
         const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
         if (storedToken) {
-          // Attempt verify against backend
           try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
             const res = await fetch('/api/auth/me', {
               headers: { Authorization: `Bearer ${storedToken}` },
+              signal: controller.signal,
             });
+            clearTimeout(timeoutId);
             if (res.ok) {
               const data = await res.json();
-              if (data?.data?.user) {
+              if (data?.data?.user && isMounted) {
                 setUser(data.data.user);
                 setToken(storedToken);
                 localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.data.user));
@@ -57,31 +59,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.removeItem(AUTH_TOKEN_KEY);
             }
           } catch {
-            // Fail closed: cached browser identity is not a valid session.
             localStorage.removeItem(AUTH_USER_KEY);
             localStorage.removeItem(AUTH_TOKEN_KEY);
           }
         }
 
-        // Check if admin is configured on server or locally
         try {
-          const res = await fetch('/api/auth/admin-status');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2500);
+          const res = await fetch('/api/auth/admin-status', {
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
           if (res.ok) {
             const data = await res.json();
-            setHasAdminConfigured(Boolean(data?.data?.hasAdmin));
-          } else setHasAdminConfigured(true);
+            if (isMounted) setHasAdminConfigured(Boolean(data?.data?.hasAdmin));
+          } else if (isMounted) {
+            setHasAdminConfigured(true);
+          }
         } catch {
-          // Keep setup disabled if server status is unavailable.
-          setHasAdminConfigured(true);
+          if (isMounted) setHasAdminConfigured(true);
         }
       } catch (e) {
         console.warn('Auth initialization error', e);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     initAuth();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {

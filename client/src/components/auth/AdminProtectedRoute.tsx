@@ -21,6 +21,12 @@ export const AdminProtectedRoute: React.FC<ProtectedRouteProps> = ({ children })
           <Loader2 className="w-4 h-4 animate-spin text-[#C5A880]" />
           <span>অ্যাডমিন নিরাপত্তা যাচাই করা হচ্ছে...</span>
         </div>
+        <a
+          href="/admin/login"
+          className="text-xs text-[#C5A880] hover:underline pt-2 cursor-pointer"
+        >
+          দেরি হলে এখানে ক্লিক করে লগইন করুন →
+        </a>
       </div>
     );
   }
