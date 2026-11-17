@@ -100,10 +100,17 @@ export const AdminDashboardPage: React.FC = () => {
   const [prodPrice, setProdPrice] = useState('850');
   const [prodComparePrice, setProdComparePrice] = useState('1050');
   const [prodImage, setProdImage] = useState('');
+  const [prodGalleryImages, setProdGalleryImages] = useState<string[]>([]);
+  const [galleryInput, setGalleryInput] = useState('');
   const [prodDesc, setProdDesc] = useState('');
+  const [stockS, setStockS] = useState('15');
   const [stockM, setStockM] = useState('20');
   const [stockL, setStockL] = useState('25');
   const [stockXL, setStockXL] = useState('15');
+  const [stockXXL, setStockXXL] = useState('10');
+  const [isFeaturedProd, setIsFeaturedProd] = useState(false);
+  const [isNewArrivalProd, setIsNewArrivalProd] = useState(true);
+  const [isBestSellerProd, setIsBestSellerProd] = useState(false);
 
   // Orders State
   const [orders, setOrders] = useState<any[]>([]);
@@ -264,15 +271,40 @@ export const AdminDashboardPage: React.FC = () => {
     setProdCategory(p.category as any);
     setProdPrice(p.price.toString());
     setProdComparePrice(p.compareAtPrice?.toString() || (p.price + 200).toString());
-    setProdImage(p.images[0] || '');
+    const [primary, ...gallery] = p.images || [];
+    setProdImage(primary || '');
+    setProdGalleryImages(gallery || []);
+    setGalleryInput('');
     setProdDesc(p.description || '');
+    const sVar = p.variants.find((v) => v.size === 'S');
     const mVar = p.variants.find((v) => v.size === 'M');
     const lVar = p.variants.find((v) => v.size === 'L');
     const xlVar = p.variants.find((v) => v.size === 'XL');
+    const xxlVar = p.variants.find((v) => v.size === 'XXL');
+    setStockS(sVar?.stock.toString() || '15');
     setStockM(mVar?.stock.toString() || '20');
     setStockL(lVar?.stock.toString() || '25');
     setStockXL(xlVar?.stock.toString() || '15');
+    setStockXXL(xxlVar?.stock.toString() || '10');
+    setIsFeaturedProd(!!p.isFeatured);
+    setIsNewArrivalProd(p.isNewArrival !== undefined ? !!p.isNewArrival : true);
+    setIsBestSellerProd(!!p.isBestSeller);
     setShowAddProductModal(true);
+  };
+
+  const handleAddGalleryImage = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    if (prodGalleryImages.includes(trimmed) || prodImage === trimmed) {
+      toast.error('Image is already added');
+      return;
+    }
+    setProdGalleryImages([...prodGalleryImages, trimmed]);
+    setGalleryInput('');
+  };
+
+  const handleRemoveGalleryImage = (indexToRemove: number) => {
+    setProdGalleryImages(prodGalleryImages.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -291,6 +323,9 @@ export const AdminDashboardPage: React.FC = () => {
       return;
     }
 
+    const cleanGallery = prodGalleryImages.map((img) => img.trim()).filter(Boolean);
+    const allImages = [image, ...cleanGallery];
+
     const newProd: Product = {
       id: id || '',
       title: prodTitle.trim(),
@@ -300,13 +335,17 @@ export const AdminDashboardPage: React.FC = () => {
       price: priceNum,
       compareAtPrice: compareNum,
       category: prodCategory,
-      images: [image],
+      images: allImages,
       variants: [
-        { id: `${id}-m`, size: 'M', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-M`, stock: Number(stockM) || 20 },
-        { id: `${id}-l`, size: 'L', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-L`, stock: Number(stockL) || 25 },
-        { id: `${id}-xl`, size: 'XL', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-XL`, stock: Number(stockXL) || 15 },
+        { id: `${id}-s`, size: 'S', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-S`, stock: Number(stockS) || 0 },
+        { id: `${id}-m`, size: 'M', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-M`, stock: Number(stockM) || 0 },
+        { id: `${id}-l`, size: 'L', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-L`, stock: Number(stockL) || 0 },
+        { id: `${id}-xl`, size: 'XL', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-XL`, stock: Number(stockXL) || 0 },
+        { id: `${id}-xxl`, size: 'XXL', color: 'Jet Black', colorCode: '#111111', sku: `MO-${prodCategory.slice(0, 2).toUpperCase()}-XXL`, stock: Number(stockXXL) || 0 },
       ],
-      isNewArrival: true,
+      isNewArrival: isNewArrivalProd,
+      isFeatured: isFeaturedProd,
+      isBestSeller: isBestSellerProd,
       tags: [prodCategory.toLowerCase(), 'new'],
       rating: 5.0,
       reviewCount: 1,
@@ -320,10 +359,18 @@ export const AdminDashboardPage: React.FC = () => {
       const category = (categoryJson.data || []).find((c: any) => c.name?.toLowerCase() === prodCategory.toLowerCase() || c.slug === categorySlug);
       if (!category?._id) throw new Error(`Database category “${prodCategory}” was not found. Add or map this category first.`);
       const payload = {
-        title: newProd.title, titleBn: newProd.titleBn, description: newProd.description,
-        price: newProd.price, compareAtPrice: newProd.compareAtPrice,
-        images: newProd.images, tags: newProd.tags, category: category._id,
-        isPublished: true, isNewArrival: true,
+        title: newProd.title,
+        titleBn: newProd.titleBn,
+        description: newProd.description,
+        price: newProd.price,
+        compareAtPrice: newProd.compareAtPrice,
+        images: newProd.images,
+        tags: newProd.tags,
+        category: category._id,
+        isPublished: true,
+        isNewArrival: isNewArrivalProd,
+        isFeatured: isFeaturedProd,
+        isBestSeller: isBestSellerProd,
         variants: newProd.variants.map(({ size, color, colorCode, sku, stock }) => ({ size, color, colorCode, sku, stock })),
       };
       const response = await fetch(id ? `/api/products/${id}` : '/api/products', {
@@ -343,6 +390,8 @@ export const AdminDashboardPage: React.FC = () => {
     setProdTitle('');
     setProdTitleBn('');
     setProdImage('');
+    setProdGalleryImages([]);
+    setGalleryInput('');
     setProdDesc('');
     toast.success(`Product "${newProd.title}" saved successfully!`);
   };
@@ -594,9 +643,17 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Left Sidebar (Dark Charcoal SaaS Style) ────────────────── */}
+      {/* ── Mobile Backdrop Overlay ─────────────────────────────────── */}
+      {mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-xs transition-opacity cursor-pointer"
+        />
+      )}
+
+      {/* ── Left Sidebar (Dark Charcoal SaaS Style - Sticky on Desktop) ── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#111827] border-r border-slate-800 flex flex-col justify-between transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#111827] border-r border-slate-800 flex flex-col justify-between transition-transform duration-200 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 ${
           mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -786,6 +843,20 @@ export const AdminDashboardPage: React.FC = () => {
                   <button
                     onClick={() => {
                       setEditingProduct(null);
+                      setProdTitle('');
+                      setProdTitleBn('');
+                      setProdImage('');
+                      setProdGalleryImages([]);
+                      setGalleryInput('');
+                      setProdDesc('');
+                      setStockS('15');
+                      setStockM('20');
+                      setStockL('25');
+                      setStockXL('15');
+                      setStockXXL('10');
+                      setIsFeaturedProd(false);
+                      setIsNewArrivalProd(true);
+                      setIsBestSellerProd(false);
                       setShowAddProductModal(true);
                       setActiveTab('products');
                     }}
@@ -969,7 +1040,17 @@ export const AdminDashboardPage: React.FC = () => {
                     setProdTitle('');
                     setProdTitleBn('');
                     setProdImage('');
+                    setProdGalleryImages([]);
+                    setGalleryInput('');
                     setProdDesc('');
+                    setStockS('15');
+                    setStockM('20');
+                    setStockL('25');
+                    setStockXL('15');
+                    setStockXXL('10');
+                    setIsFeaturedProd(false);
+                    setIsNewArrivalProd(true);
+                    setIsBestSellerProd(false);
                     setShowAddProductModal(true);
                   }}
                   className="gap-2 bg-slate-900 hover:bg-black text-white cursor-pointer"
@@ -1836,6 +1917,17 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Product Title (বাংলা)</label>
+                  <input
+                    type="text"
+                    value={prodTitleBn}
+                    onChange={(e) => setProdTitleBn(e.target.value)}
+                    placeholder="যেমন: হেভিওয়েট মিনিমাল টি-শার্ট"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
+                  />
+                </div>
+
+                <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">Category *</label>
                   <select
                     value={prodCategory}
@@ -1849,69 +1941,167 @@ export const AdminDashboardPage: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Sale Price (BDT) *</label>
-                  <input
-                    type="number"
-                    value={prodPrice}
-                    onChange={(e) => setProdPrice(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-mono"
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Sale Price (BDT) *</label>
+                    <input
+                      type="number"
+                      value={prodPrice}
+                      onChange={(e) => setProdPrice(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Regular Price (BDT)</label>
+                    <input
+                      type="number"
+                      value={prodComparePrice}
+                      onChange={(e) => setProdComparePrice(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Main Cover Image */}
+                <div className="sm:col-span-2">
+                  <ImageUploadField label="Primary Featured Image (কভার ছবি) *" value={prodImage} onChange={setProdImage} />
+                </div>
+
+                {/* Additional Product Gallery (WooCommerce Style) */}
+                <div className="sm:col-span-2 bg-slate-50/90 p-4 rounded-xl border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-xs font-bold text-slate-900 block">Product Gallery (অতিরিক্ত গ্যালারি ছবি)</label>
+                      <span className="text-[11px] text-slate-500">মডেল বা বিভিন্ন অ্যাঙ্গেলের অতিরিক্ত ছবি যোগ করুন</span>
+                    </div>
+                    <span className="text-[11px] font-mono px-2 py-0.5 bg-slate-200 rounded text-slate-700 font-semibold">
+                      {prodGalleryImages.length} images
+                    </span>
+                  </div>
+
+                  {/* Thumbnail gallery preview with remove */}
+                  {prodGalleryImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {prodGalleryImages.map((imgUrl, idx) => (
+                        <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-slate-300 bg-white shadow-xs">
+                          <img src={imgUrl} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveGalleryImage(idx)}
+                            className="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-90 group-hover:opacity-100 shadow-sm cursor-pointer hover:bg-rose-700"
+                            title="Remove image"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add gallery image field */}
+                  <ImageUploadField
+                    label="Add Gallery Image"
+                    value={galleryInput}
+                    onChange={(newUrl) => {
+                      if (newUrl) {
+                        handleAddGalleryImage(newUrl);
+                      }
+                    }}
+                    optional
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Compare-At Price (BDT)</label>
-                  <input
-                    type="number"
-                    value={prodComparePrice}
-                    onChange={(e) => setProdComparePrice(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-mono"
-                  />
-                </div>
-
-                <div className="sm:col-span-2"><ImageUploadField label="Product image" value={prodImage} onChange={setProdImage} /></div>
-
+                {/* Stock Quantities (Sizes: S, M, L, XL, XXL) */}
                 <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-slate-700 block mb-1">Stock Quantities (Sizes)</label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-5 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-500 block">Size M</span>
+                      <span className="text-[10px] text-slate-500 block text-center font-bold">Size S</span>
+                      <input
+                        type="number"
+                        value={stockS}
+                        onChange={(e) => setStockS(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-center"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block text-center font-bold">Size M</span>
                       <input
                         type="number"
                         value={stockM}
                         onChange={(e) => setStockM(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono"
+                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block">Size L</span>
+                      <span className="text-[10px] text-slate-500 block text-center font-bold">Size L</span>
                       <input
                         type="number"
                         value={stockL}
                         onChange={(e) => setStockL(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono"
+                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block">Size XL</span>
+                      <span className="text-[10px] text-slate-500 block text-center font-bold">Size XL</span>
                       <input
                         type="number"
                         value={stockXL}
                         onChange={(e) => setStockXL(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono"
+                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-center"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block text-center font-bold">Size XXL</span>
+                      <input
+                        type="number"
+                        value={stockXXL}
+                        onChange={(e) => setStockXXL(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-center"
                       />
                     </div>
                   </div>
                 </div>
 
+                {/* Badges / Visibility Flags */}
+                <div className="sm:col-span-2 flex flex-wrap gap-4 py-1.5 border-y border-slate-200/80">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={isFeaturedProd}
+                      onChange={(e) => setIsFeaturedProd(e.target.checked)}
+                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                    />
+                    <span>Featured Product (ফিচার্ড)</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={isNewArrivalProd}
+                      onChange={(e) => setIsNewArrivalProd(e.target.checked)}
+                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                    />
+                    <span>New Arrival (নতুন কালেকশন)</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={isBestSellerProd}
+                      onChange={(e) => setIsBestSellerProd(e.target.checked)}
+                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                    />
+                    <span>Best Seller (বেস্ট সেলার)</span>
+                  </label>
+                </div>
+
                 <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Description</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Description (বিবরণ ও ফেব্রিক তথ্য)</label>
                   <textarea
                     rows={2}
                     value={prodDesc}
                     onChange={(e) => setProdDesc(e.target.value)}
-                    placeholder="Enter detailed fabric and fitting information..."
+                    placeholder="Enter detailed fabric, GSM, and fitting information..."
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
                   />
                 </div>

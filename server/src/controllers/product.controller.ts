@@ -117,7 +117,7 @@ export const getProductBySlug = async (req: Request, res: Response) => {
 
 // POST /api/admin/products (Admin create product)
 export const createProduct = async (req: Request, res: Response) => {
-  const { title, description, category, price, compareAtPrice, costPrice, images, variants, tags, isFeatured, isNewArrival, isBestSeller, sizeGuide, seoTitle, seoDescription } = req.body;
+  const { title, titleBn, description, category, price, compareAtPrice, costPrice, images, variants, tags, isFeatured, isNewArrival, isBestSeller, sizeGuide, seoTitle, seoDescription } = req.body;
 
   const baseSlug = slugify(title, { lower: true, strict: true });
   let slug = baseSlug;
@@ -130,6 +130,7 @@ export const createProduct = async (req: Request, res: Response) => {
 
   const product = await Product.create({
     title,
+    titleBn: titleBn || undefined,
     slug,
     description,
     category,
