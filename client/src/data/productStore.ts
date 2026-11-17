@@ -1,41 +1,37 @@
-import { SAMPLE_PRODUCTS } from '../data/sampleProducts';
 import type { Product } from '../types';
 
-const STORAGE_KEY = 'mens_outfit_custom_products';
+const REMOTE_PRODUCTS_KEY = 'mens_outfit_remote_products_cache';
+
+function normalizeRemoteProducts(products: any[]): Product[] {
+  return products.map((p) => ({
+    ...p,
+    id: p._id || p.id,
+    category: typeof p.category === 'string' ? p.category : (p.category?.name || 'Uncategorized'),
+    rating: p.averageRating ?? p.rating ?? 0,
+    reviewCount: p.reviewCount ?? 0,
+    variants: (p.variants || []).map((v: any, index: number) => ({ ...v, id: v.id || `${p._id || p.id}-${index}` })),
+  }));
+}
+
+// Keep a display cache for synchronous page consumers; the API remains the source of truth.
+export function setRemoteProducts(products: any[]): void {
+  try {
+    // Admin API includes drafts; only published products belong in the storefront cache.
+    localStorage.setItem(REMOTE_PRODUCTS_KEY, JSON.stringify(products.filter((product) => product.isPublished !== false)));
+    window.dispatchEvent(new Event('products_updated'));
+  } catch (error) {
+    console.warn('Could not cache the latest product list', error);
+  }
+}
 
 export function getAllProducts(): Product[] {
   try {
-    const custom = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    if (Array.isArray(custom) && custom.length > 0) {
-      return [...custom, ...SAMPLE_PRODUCTS];
+    const remote = localStorage.getItem(REMOTE_PRODUCTS_KEY);
+    if (remote !== null) {
+      return normalizeRemoteProducts(JSON.parse(remote));
     }
   } catch (e) {
-    console.warn('Failed to load custom products from localStorage', e);
+    console.warn('Failed to load cached database products', e);
   }
-  return SAMPLE_PRODUCTS;
-}
-
-export function saveProduct(product: Product): void {
-  try {
-    const custom = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    const existingIndex = custom.findIndex((p: Product) => p.id === product.id);
-    if (existingIndex >= 0) {
-      custom[existingIndex] = product;
-    } else {
-      custom.unshift(product);
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
-  } catch (e) {
-    console.warn('Failed to save product to localStorage', e);
-  }
-}
-
-export function deleteProduct(productId: string): void {
-  try {
-    const custom = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    const filtered = custom.filter((p: Product) => p.id !== productId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  } catch (e) {
-    console.warn('Failed to delete product from localStorage', e);
-  }
+  return [];
 }

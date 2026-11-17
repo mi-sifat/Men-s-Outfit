@@ -4,6 +4,12 @@ import { Category } from '../models/Category';
 import { AppError } from '../utils/AppError';
 import slugify from 'slugify';
 
+// GET /api/products/admin/list (Admin catalog, including unpublished products)
+export const getAdminProducts = async (_req: Request, res: Response) => {
+  const products = await Product.find().populate('category', 'name nameBn slug').sort({ createdAt: -1 }).lean();
+  res.status(200).json({ success: true, data: products });
+};
+
 // GET /api/products (Public listing with search, category, filters, sorting & pagination)
 export const getProducts = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;

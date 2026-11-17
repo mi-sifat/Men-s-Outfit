@@ -18,9 +18,10 @@ import { Button } from '../ui/Button';
 import { toast } from 'react-hot-toast';
 import { 
   getLocalStoreSettings, 
-  saveLocalStoreSettings 
+  saveAdminStoreSettings
 } from '../../data/settingsStore';
 import type { BannerItem } from '../../data/settingsStore';
+import { ImageUploadField } from './ImageUploadField';
 
 export const BannerManager: React.FC = () => {
   const [settings, setSettings] = useState(() => getLocalStoreSettings());
@@ -84,7 +85,7 @@ export const BannerManager: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !imageUrl.trim()) {
       toast.error('Banner title and desktop image URL are required');
@@ -115,30 +116,33 @@ export const BannerManager: React.FC = () => {
     }
 
     const updatedSettings = { ...settings, banners: currentBanners };
-    saveLocalStoreSettings(updatedSettings);
+    try { await saveAdminStoreSettings(updatedSettings); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Banner was not saved.'); return; }
     toast.success(editingBanner ? 'Banner updated successfully!' : 'Banner created successfully!');
     setShowModal(false);
     refreshBanners();
   };
 
-  const handleDelete = (id: string, bannerTitle: string) => {
+  const handleDelete = async (id: string, bannerTitle: string) => {
     if (confirm(`Delete banner "${bannerTitle}"?`)) {
       const filtered = banners.filter((b) => b.id !== id);
       const updatedSettings = { ...settings, banners: filtered };
-      saveLocalStoreSettings(updatedSettings);
+      try { await saveAdminStoreSettings(updatedSettings); }
+      catch (error) { toast.error(error instanceof Error ? error.message : 'Banner was not deleted.'); return; }
       toast.success('Banner deleted.');
       refreshBanners();
     }
   };
 
-  const handleToggleActive = (id: string) => {
+  const handleToggleActive = async (id: string) => {
     const updated = banners.map((b) => (b.id === id ? { ...b, isActive: !b.isActive } : b));
-    saveLocalStoreSettings({ ...settings, banners: updated });
+    try { await saveAdminStoreSettings({ ...settings, banners: updated }); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Banner status was not saved.'); return; }
     toast.success('Banner status toggled');
     refreshBanners();
   };
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
     const newIdx = direction === 'up' ? index - 1 : index + 1;
     if (newIdx < 0 || newIdx >= banners.length) return;
 
@@ -147,7 +151,8 @@ export const BannerManager: React.FC = () => {
     copy.splice(newIdx, 0, moved);
 
     const reordered = copy.map((b, idx) => ({ ...b, order: idx + 1 }));
-    saveLocalStoreSettings({ ...settings, banners: reordered });
+    try { await saveAdminStoreSettings({ ...settings, banners: reordered }); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Banner order was not saved.'); return; }
     toast.success('Banners reordered');
     refreshBanners();
   };
@@ -322,30 +327,11 @@ export const BannerManager: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Desktop Image URL *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
-                  />
+                  <ImageUploadField label="Desktop banner image *" value={imageUrl} onChange={setImageUrl} />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Mobile Image URL (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={mobileImageUrl}
-                    onChange={(e) => setMobileImageUrl(e.target.value)}
-                    placeholder="Optimized 4:5 or 1:1 image for mobile"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
-                  />
+                  <ImageUploadField label="Mobile banner image" optional value={mobileImageUrl} onChange={setMobileImageUrl} />
                 </div>
               </div>
 

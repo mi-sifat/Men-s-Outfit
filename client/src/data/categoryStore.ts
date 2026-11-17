@@ -68,21 +68,23 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
   },
 ];
 
-const STORAGE_KEY = 'mens_outfit_categories';
+const REMOTE_CATEGORIES_KEY = 'mens_outfit_remote_categories_cache';
+
+export function setRemoteCategories(categories: any[]): void {
+  try {
+    localStorage.setItem(REMOTE_CATEGORIES_KEY, JSON.stringify(categories));
+    window.dispatchEvent(new Event('categories_updated'));
+  } catch (e) { console.warn('Could not cache the latest categories', e); }
+}
 
 export function getAllCategories(): CategoryItem[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.sort((a, b) => (a.order || 0) - (b.order || 0));
-      }
-    }
+    const remote = localStorage.getItem(REMOTE_CATEGORIES_KEY);
+    if (remote !== null) return JSON.parse(remote).map((category: any) => ({ ...category, id: category._id || category.id }));
   } catch (e) {
     console.warn('Failed to parse categories from storage:', e);
   }
-  return DEFAULT_CATEGORIES;
+  return [];
 }
 
 export function getActiveCategories(): CategoryItem[] {
@@ -95,59 +97,4 @@ export function getHomeCategories(): CategoryItem[] {
 
 export function getNavCategories(): CategoryItem[] {
   return getAllCategories().filter((c) => c.isActive && c.showInNav);
-}
-
-export function saveCategory(category: CategoryItem): void {
-  try {
-    const categories = getAllCategories();
-    const existingIndex = categories.findIndex((c) => c.id === category.id || c.slug === category.slug);
-
-    if (existingIndex >= 0) {
-      categories[existingIndex] = { ...categories[existingIndex], ...category };
-    } else {
-      categories.push({
-        ...category,
-        id: category.id || `cat-${Date.now()}`,
-        order: category.order || categories.length + 1,
-      });
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
-    window.dispatchEvent(new Event('categories_updated'));
-  } catch (e) {
-    console.error('Failed to save category:', e);
-  }
-}
-
-export function deleteCategory(id: string): { success: boolean; message?: string } {
-  try {
-    const categories = getAllCategories();
-    const filtered = categories.filter((c) => c.id !== id);
-    if (filtered.length === categories.length) {
-      return { success: false, message: 'Category not found' };
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    window.dispatchEvent(new Event('categories_updated'));
-    return { success: true };
-  } catch (e) {
-    return { success: false, message: (e as any).message };
-  }
-}
-
-export function reorderCategories(orderedIds: string[]): void {
-  try {
-    const categories = getAllCategories();
-    const reordered = categories.map((cat) => {
-      const idx = orderedIds.indexOf(cat.id);
-      return {
-        ...cat,
-        order: idx >= 0 ? idx + 1 : cat.order,
-      };
-    });
-    reordered.sort((a, b) => a.order - b.order);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reordered));
-    window.dispatchEvent(new Event('categories_updated'));
-  } catch (e) {
-    console.error('Failed to reorder categories:', e);
-  }
 }

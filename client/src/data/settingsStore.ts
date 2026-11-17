@@ -219,43 +219,40 @@ export const DEFAULT_SETTINGS: StoreSettingsData = {
   banners: [
     {
       id: 'banner-1',
-      title: 'CASUAL & STREETWEAR ESSENTIALS',
-      subtitle: '100% Combed Heavy Cotton. Built for comfort, durability, and bold streetwear aesthetics.',
-      buttonText: 'SHOP NOW',
-      linkUrl: '/shop',
-      imageUrl: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=1600&auto=format&fit=crop&q=85',
-      mobileImageUrl: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=85',
-      altText: "Men's Outfit Summer Collection",
-      badgeText: 'SUMMER & STREET DROP 2026',
-      badgeTextBn: 'এক্সক্লুসিভ স্ট্রিটওয়্যার ২০২৬',
+      title: 'নতুন কালেকশন এসে গেছে',
+      subtitle: 'সেরা মানের ওভারসাইজড টি-শার্ট এখন পাওয়া যাচ্ছে। স্টাইলে থাকুন।',
+      buttonText: 'এখনই কিনুন',
+      linkUrl: '/category/oversized',
+      imageUrl: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=1920&q=85',
+      mobileImageUrl: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=800&q=85',
+      altText: 'New Oversized Collection',
+      badgeText: 'নতুন কালেকশন',
       isActive: true,
       order: 1,
     },
     {
       id: 'banner-2',
-      title: 'HEAVYWEIGHT OVERSIZED TEES',
-      subtitle: '260 GSM Premium bio-washed fabric for ultimate relaxed streetwear fit.',
-      buttonText: 'EXPLORE OVERSIZED',
-      linkUrl: '/category/oversized',
-      imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=1600&auto=format&fit=crop&q=80',
-      mobileImageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
-      altText: 'Oversized Streetwear Tees',
-      badgeText: 'LIMITED EDITION',
-      badgeTextBn: 'সীমিত সংস্করণ',
+      title: 'গ্রাফিক টিস কালেকশন',
+      subtitle: 'আর্টিস্টিক প্রিন্টের অসাধারণ কালেকশন। আজই অর্ডার করুন।',
+      buttonText: 'দেখুন',
+      linkUrl: '/category/graphic-tees',
+      imageUrl: 'https://images.unsplash.com/photo-1555069519-127aadedf1ee?w=1920&q=85',
+      mobileImageUrl: 'https://images.unsplash.com/photo-1555069519-127aadedf1ee?w=800&q=85',
+      altText: 'Graphic Tees Collection',
+      badgeText: 'বেস্ট সেলার',
       isActive: true,
       order: 2,
     },
     {
       id: 'banner-3',
-      title: 'URBAN GRAPHIC & ART DROPS',
-      subtitle: 'High-density screen prints and authentic street-art inspired concepts.',
-      buttonText: 'VIEW GRAPHIC TEES',
-      linkUrl: '/category/graphic-tees',
-      imageUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=1600&auto=format&fit=crop&q=80',
-      mobileImageUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80',
-      altText: 'Graphic Art Streetwear',
-      badgeText: 'NEW ARTWORK',
-      badgeTextBn: 'নতুন আর্টওয়ার্ক',
+      title: 'পোলো শার্ট স্পেশাল অফার',
+      subtitle: 'প্রিমিয়াম কটন পোলো শার্ট। ৳১৫০ পর্যন্ত ছাড়।',
+      buttonText: 'অফার দেখুন',
+      linkUrl: '/category/polo-shirts',
+      imageUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=1920&q=85',
+      mobileImageUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=85',
+      altText: 'Polo Shirts Special Offer',
+      badgeText: '৳১৫০ ছাড়',
       isActive: true,
       order: 3,
     },
@@ -275,11 +272,10 @@ export function getLocalStoreSettings(): StoreSettingsData {
     if (raw) {
       const parsed = JSON.parse(raw);
       // Ensure homepageSections exists
-      if (!parsed.homepageSections || !Array.isArray(parsed.homepageSections) || parsed.homepageSections.length === 0) {
+      if (!parsed.homepageSections || !Array.isArray(parsed.homepageSections)) {
         parsed.homepageSections = DEFAULT_HOMEPAGE_SECTIONS;
       }
-      // Ensure banners is not empty
-      if (!parsed.banners || !Array.isArray(parsed.banners) || parsed.banners.length === 0) {
+      if (!parsed.banners || !Array.isArray(parsed.banners)) {
         parsed.banners = DEFAULT_SETTINGS.banners;
       }
       return { ...DEFAULT_SETTINGS, ...parsed };
@@ -297,6 +293,20 @@ export function saveLocalStoreSettings(settings: StoreSettingsData): void {
   } catch (e) {
     console.warn('Failed to save store settings to localStorage', e);
   }
+}
+
+export async function saveAdminStoreSettings(settings: StoreSettingsData): Promise<StoreSettingsData> {
+  const token = localStorage.getItem('mens_outfit_admin_token') || '';
+  const response = await fetch('/api/admin/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(settings),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Store settings could not be saved');
+  const saved = { ...settings, ...result.data } as StoreSettingsData;
+  saveLocalStoreSettings(saved);
+  return saved;
 }
 
 export function saveHomepageSections(sections: HomepageSectionItem[]): void {

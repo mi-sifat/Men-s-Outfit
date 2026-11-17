@@ -7,6 +7,9 @@ import { AdminProtectedRoute } from './components/auth/AdminProtectedRoute';
 import { CartProvider, useCart } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { saveLocalStoreSettings } from './data/settingsStore';
+import { setRemoteProducts } from './data/productStore';
+import { setRemoteCategories } from './data/categoryStore';
 
 // Route-level code splitting for fast initial storefront loading
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
@@ -51,6 +54,30 @@ const AdminLoadingFallback = () => (
 
 function AppContent() {
   const { totalItems, addToCart } = useCart();
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(async (response) => {
+        if (!response.ok) return;
+        const result = await response.json();
+        if (result.success && result.data) saveLocalStoreSettings(result.data);
+      })
+      .catch(() => { /* Local defaults keep the storefront usable while the API is offline. */ });
+    fetch('/api/products?limit=100')
+      .then(async (response) => {
+        if (!response.ok) return;
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) setRemoteProducts(result.data);
+      })
+      .catch(() => { /* Keep the last product cache available while the API is offline. */ });
+    fetch('/api/categories?all=true')
+      .then(async (response) => {
+        if (!response.ok) return;
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) setRemoteCategories(result.data);
+      })
+      .catch(() => { /* Keep the last category cache available while the API is offline. */ });
+  }, []);
 
   const handleAddToCart = (product: any) => {
     addToCart({

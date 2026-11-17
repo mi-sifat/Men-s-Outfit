@@ -34,6 +34,7 @@ coverage/
 
 # Uploads (local dev)
 uploads/
+/server/uploads/
 
 # TypeScript cache
 *.tsbuildinfo

@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import config from './config';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { morganStream } from './utils/logger';
@@ -24,13 +25,14 @@ app.use(
   })
 );
 
-// Rate limiting
+// Rate limiting (Skipped in development, generous in production)
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: config.isDevelopment ? 10000 : 1500, // Generous limit so normal browsing and admin work never get blocked
+  skip: () => config.isDevelopment,
   message: {
     success: false,
-    message: 'অনেক বেশি অনুরোধ। ১৫ মিনিট পর আবার চেষ্টা করুন।',
+    message: 'অনেক বেশি অনুরোধ। কিছুক্ষণ পর আবার চেষ্টা করুন।',
     code: 'RATE_LIMITED',
   },
   standardHeaders: true,
@@ -44,6 +46,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(mongoSanitize());
 app.use(compression());
+
+// Local development uses a persistent uploads folder; production uploads go to Cloudinary.
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), { fallthrough: false, index: false }));
 
 // ── Logging ─────────────────────────────────────────────────
 if (config.isDevelopment) {

@@ -21,14 +21,12 @@ import { Button } from '../ui/Button';
 import { toast } from 'react-hot-toast';
 import { 
   getLocalStoreSettings, 
-  saveLocalStoreSettings, 
-  saveHomepageSections, 
-  reorderHomepageSections, 
-  toggleHomepageSection 
+  saveAdminStoreSettings,
 } from '../../data/settingsStore';
 import type { HomepageSectionItem, HomepageSectionType } from '../../data/settingsStore';
 import { getAllCategories } from '../../data/categoryStore';
 import { getAllProducts } from '../../data/productStore';
+import { ImageUploadField } from './ImageUploadField';
 
 export const HomepageSectionManager: React.FC = () => {
   const [sections, setSections] = useState<HomepageSectionItem[]>(() => {
@@ -134,7 +132,7 @@ export const HomepageSectionManager: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       toast.error('Section title is required');
@@ -181,22 +179,24 @@ export const HomepageSectionManager: React.FC = () => {
       currentSections.push(sectionData);
     }
 
-    saveHomepageSections(currentSections);
+    try { await saveAdminStoreSettings({ ...getLocalStoreSettings(), homepageSections: currentSections }); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Homepage section was not saved.'); return; }
     toast.success(editingSection ? 'Homepage section updated!' : 'New section added to homepage!');
     setShowModal(false);
     refreshSections();
   };
 
-  const handleDelete = (id: string, title: string) => {
+  const handleDelete = async (id: string, title: string) => {
     if (confirm(`Remove section "${title}" from the homepage?`)) {
       const filtered = sections.filter((s) => s.id !== id);
-      saveHomepageSections(filtered);
+      try { await saveAdminStoreSettings({ ...getLocalStoreSettings(), homepageSections: filtered }); }
+      catch (error) { toast.error(error instanceof Error ? error.message : 'Section was not removed.'); return; }
       toast.success('Section removed.');
       refreshSections();
     }
   };
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
     const newIdx = direction === 'up' ? index - 1 : index + 1;
     if (newIdx < 0 || newIdx >= sections.length) return;
 
@@ -204,13 +204,17 @@ export const HomepageSectionManager: React.FC = () => {
     const [moved] = copy.splice(index, 1);
     copy.splice(newIdx, 0, moved);
 
-    reorderHomepageSections(copy.map((s) => s.id));
+    const reordered = copy.map((section, idx) => ({ ...section, order: idx + 1 }));
+    try { await saveAdminStoreSettings({ ...getLocalStoreSettings(), homepageSections: reordered }); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Section order was not saved.'); return; }
     refreshSections();
     toast.success('Section order updated');
   };
 
-  const handleToggle = (id: string) => {
-    toggleHomepageSection(id);
+  const handleToggle = async (id: string) => {
+    const updated = sections.map((section) => section.id === id ? { ...section, isActive: !section.isActive } : section);
+    try { await saveAdminStoreSettings({ ...getLocalStoreSettings(), homepageSections: updated }); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Section visibility was not saved.'); return; }
     refreshSections();
     toast.success('Section visibility toggled');
   };
@@ -586,17 +590,7 @@ export const HomepageSectionManager: React.FC = () => {
                     Promotional Banner Configuration
                   </span>
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
-                      Banner Image URL *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={promoImageUrl}
-                      onChange={(e) => setPromoImageUrl(e.target.value)}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-md text-xs"
-                    />
+                    <ImageUploadField label="Promo banner image *" value={promoImageUrl} onChange={setPromoImageUrl} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>

@@ -8,6 +8,7 @@ import courierRoutes from './courier.routes';
 import adminRoutes from './admin.routes';
 import settingsRoutes from './settings.routes';
 import categoryRoutes from './category.routes';
+import uploadRoutes from './upload.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/payments', paymentRoutes);
 router.use('/couriers', courierRoutes);
 router.use('/admin', adminRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/uploads', uploadRoutes);
 
 export default router;

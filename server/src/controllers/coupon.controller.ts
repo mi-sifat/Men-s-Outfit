@@ -91,3 +91,15 @@ export const createCoupon = async (req: Request, res: Response) => {
     data: coupon,
   });
 };
+
+export const updateCoupon = async (req: Request, res: Response) => {
+  const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  if (!coupon) throw AppError.notFound('কুপন পাওয়া যায়নি।');
+  res.status(200).json({ success: true, message: 'কুপন আপডেট হয়েছে।', data: coupon });
+};
+
+export const deleteCoupon = async (req: Request, res: Response) => {
+  const coupon = await Coupon.findByIdAndDelete(req.params.id);
+  if (!coupon) throw AppError.notFound('কুপন পাওয়া যায়নি।');
+  res.status(200).json({ success: true, message: 'কুপন মুছে ফেলা হয়েছে।' });
+};

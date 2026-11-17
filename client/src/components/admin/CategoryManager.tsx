@@ -16,15 +16,11 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { toast } from 'react-hot-toast';
-import { 
-  getAllCategories, 
-  saveCategory, 
-  deleteCategory, 
-  reorderCategories 
-} from '../../data/categoryStore';
+import { getAllCategories, setRemoteCategories } from '../../data/categoryStore';
 import type { CategoryItem } from '../../data/categoryStore';
 import { getAllProducts } from '../../data/productStore';
 import type { Product } from '../../types';
+import { ImageUploadField } from './ImageUploadField';
 
 export const CategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<CategoryItem[]>(() => getAllCategories());
@@ -45,11 +41,18 @@ export const CategoryManager: React.FC = () => {
   const [showInNav, setShowInNav] = useState(true);
   const [isActive, setIsActive] = useState(true);
 
-  const refreshCategories = () => {
-    setCategories(getAllCategories());
+  const refreshCategories = async () => {
+    try {
+      const response = await fetch('/api/categories?all=true');
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Categories could not be loaded');
+      setRemoteCategories(result.data || []);
+      setCategories((result.data || []).map((category: any) => ({ ...category, id: category._id || category.id })));
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Categories could not be loaded.'); }
   };
 
   useEffect(() => {
+    void refreshCategories();
     window.addEventListener('categories_updated', refreshCategories);
     return () => window.removeEventListener('categories_updated', refreshCategories);
   }, []);
@@ -87,7 +90,7 @@ export const CategoryManager: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('Category name is required');
@@ -109,13 +112,21 @@ export const CategoryManager: React.FC = () => {
       order: editingCategory ? editingCategory.order : categories.length + 1,
     };
 
-    saveCategory(catData);
-    toast.success(editingCategory ? 'Category updated successfully!' : 'Category created successfully!');
-    setShowModal(false);
-    refreshCategories();
+    try {
+      const token = localStorage.getItem('mens_outfit_admin_token') || '';
+      const response = await fetch(editingCategory ? `/api/categories/${editingCategory.id}` : '/api/categories', {
+        method: editingCategory ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...catData, id: undefined }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Category could not be saved');
+      toast.success(editingCategory ? 'Category updated in database.' : 'Category created in database.');
+      setShowModal(false); await refreshCategories();
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Category could not be saved.'); }
   };
 
-  const handleDelete = (cat: CategoryItem) => {
+  const handleDelete = async (cat: CategoryItem) => {
     // Check if any products exist in this category
     const catSlug = cat.slug.toLowerCase();
     const count = products.filter(
@@ -128,17 +139,16 @@ export const CategoryManager: React.FC = () => {
     }
 
     if (confirm(`Are you sure you want to delete "${cat.name}"?`)) {
-      const res = deleteCategory(cat.id);
-      if (res.success) {
-        toast.success(`Category "${cat.name}" deleted.`);
-        refreshCategories();
-      } else {
-        toast.error(res.message || 'Failed to delete category');
-      }
+      try {
+        const response = await fetch(`/api/categories/${cat.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` } });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Category delete failed');
+        toast.success(`Category "${cat.name}" deleted from database.`); await refreshCategories();
+      } catch (error) { toast.error(error instanceof Error ? error.message : 'Category could not be deleted.'); }
     }
   };
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
     const newIdx = direction === 'up' ? index - 1 : index + 1;
     if (newIdx < 0 || newIdx >= categories.length) return;
 
@@ -146,15 +156,27 @@ export const CategoryManager: React.FC = () => {
     const [moved] = copy.splice(index, 1);
     copy.splice(newIdx, 0, moved);
 
-    reorderCategories(copy.map((c) => c.id));
-    refreshCategories();
-    toast.success('Categories reordered');
+    try {
+      const token = localStorage.getItem('mens_outfit_admin_token') || '';
+      const results = await Promise.all(copy.map((cat, order) => fetch(`/api/categories/${cat.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ order: order + 1 }),
+      })));
+      const failed = results.find((response) => !response.ok);
+      if (failed) throw new Error('Category order could not be saved');
+      await refreshCategories(); toast.success('Category order saved to database.');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Category order could not be saved.'); }
   };
 
-  const handleToggleActive = (cat: CategoryItem) => {
-    saveCategory({ ...cat, isActive: !cat.isActive });
-    toast.success(`Category ${!cat.isActive ? 'activated' : 'deactivated'}`);
-    refreshCategories();
+  const handleToggleActive = async (cat: CategoryItem) => {
+    try {
+      const response = await fetch(`/api/categories/${cat.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` },
+        body: JSON.stringify({ isActive: !cat.isActive }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Category update failed');
+      await refreshCategories(); toast.success(`Category ${!cat.isActive ? 'activated' : 'deactivated'} in database.`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Category could not be updated.'); }
   };
 
   const filteredCategories = categories.filter((c) =>
@@ -420,21 +442,7 @@ export const CategoryManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Image or Banner URL
-                </label>
-                <input
-                  type="text"
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-slate-900"
-                />
-                {image && (
-                  <div className="mt-2 h-20 w-32 rounded-lg overflow-hidden border border-slate-200">
-                    <img src={image} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
+                <ImageUploadField label="Category image" value={image} onChange={setImage} optional />
               </div>
 
               <div>

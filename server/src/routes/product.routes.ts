@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProducts, getProductBySlug, createProduct, updateProduct, deleteProduct } from '../controllers/product.controller';
+import { getProducts, getProductBySlug, getAdminProducts, createProduct, updateProduct, deleteProduct } from '../controllers/product.controller';
 import { asyncHandler } from '../middleware/errorHandler';
 import { authenticate, authorize } from '../middleware/auth';
 import { UserRole } from '../types';
@@ -7,6 +7,7 @@ import { UserRole } from '../types';
 const router = Router();
 
 // Public routes
+router.get('/admin/list', authenticate, authorize(UserRole.ADMIN, UserRole.OWNER, UserRole.INVENTORY_MANAGER), asyncHandler(getAdminProducts));
 router.get('/', asyncHandler(getProducts));
 router.get('/:slug', asyncHandler(getProductBySlug));
 

@@ -47,13 +47,15 @@ import {
 import { formatPrice } from '../lib/utils';
 import { Button } from '../components/ui/Button';
 import { toast } from 'react-hot-toast';
-import { getAllProducts, saveProduct, deleteProduct } from '../data/productStore';
 import { getLocalStoreSettings, saveLocalStoreSettings } from '../data/settingsStore';
+import { setRemoteProducts } from '../data/productStore';
+import { setRemoteCategories } from '../data/categoryStore';
 import type { StoreSettingsData, BannerItem } from '../data/settingsStore';
 import type { Product } from '../types';
 import { CategoryManager } from '../components/admin/CategoryManager';
 import { HomepageSectionManager } from '../components/admin/HomepageSectionManager';
 import { BannerManager } from '../components/admin/BannerManager';
+import { ImageUploadField } from '../components/admin/ImageUploadField';
 
 export const AdminDashboardPage: React.FC = () => {
   const { user, logout, changePassword } = useAuth();
@@ -85,7 +87,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [settings, setSettings] = useState<StoreSettingsData>(() => getLocalStoreSettings());
 
   // Products State
-  const [products, setProducts] = useState<Product[]>(() => getAllProducts());
+  const [products, setProducts] = useState<Product[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const [showAddProductModal, setShowAddProductModal] = useState(false);
@@ -104,52 +106,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [stockXL, setStockXL] = useState('15');
 
   // Orders State
-  const [orders, setOrders] = useState<any[]>(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('mens_outfit_orders') || '[]');
-      const defaultOrders = [
-        {
-          id: 'ord-1',
-          orderNumber: 'MO-2026-00001',
-          customerName: 'Tanvir Ahmed',
-          phone: '01712345678',
-          address: 'House 42, Road 27, Dhanmondi, Dhaka',
-          total: 1770,
-          status: 'pending',
-          paymentMethod: 'COD',
-          itemsCount: 2,
-          createdAt: 'Today, 02:15 PM',
-        },
-        {
-          id: 'ord-2',
-          orderNumber: 'MO-2026-00002',
-          customerName: 'Rakibul Hasan',
-          phone: '01898765432',
-          address: 'GEC Circle, Nasirabad, Chattogram',
-          total: 980,
-          status: 'confirmed',
-          paymentMethod: 'COD',
-          itemsCount: 1,
-          createdAt: 'Yesterday, 08:45 PM',
-        },
-        {
-          id: 'ord-3',
-          orderNumber: 'MO-2026-00003',
-          customerName: 'Arif Chowdhury',
-          phone: '01911223344',
-          address: 'Sector 7, Uttara, Dhaka',
-          total: 2450,
-          status: 'shipped',
-          paymentMethod: 'COD',
-          itemsCount: 3,
-          createdAt: '23 Oct, 11:00 AM',
-        },
-      ];
-      return Array.isArray(stored) && stored.length > 0 ? [...stored, ...defaultOrders] : defaultOrders;
-    } catch {
-      return [];
-    }
-  });
+  const [orders, setOrders] = useState<any[]>([]);
 
   const [orderFilter, setOrderFilter] = useState('all');
   const [orderSearch, setOrderSearch] = useState('');
@@ -165,35 +122,12 @@ export const AdminDashboardPage: React.FC = () => {
   const [newBannerImage, setNewBannerImage] = useState('');
 
   // Coupons State
-  const [coupons, setCoupons] = useState([
-    { code: 'MEN100', discount: 100, type: 'fixed', minSpend: 1500, active: true },
-    { code: 'OUTFIT50', discount: 50, type: 'fixed', minSpend: 800, active: true },
-    { code: 'WELCOME10', discount: 10, type: 'percent', minSpend: 1000, active: true },
-  ]);
+  const [coupons, setCoupons] = useState<any[]>([]);
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponDiscount, setNewCouponDiscount] = useState('100');
 
   // Audit Logs State
-  const [auditLogs, setAuditLogs] = useState<any[]>([
-    {
-      id: 'log-1',
-      adminEmail: user?.email || 'admin@mensoutfit.com',
-      action: 'ADMIN_LOGIN',
-      resource: 'AUTH',
-      details: 'Administrator logged in successfully via 256-bit SSL',
-      time: 'Today, 01:15 AM',
-      ip: '103.145.24.12',
-    },
-    {
-      id: 'log-2',
-      adminEmail: user?.email || 'admin@mensoutfit.com',
-      action: 'SETTINGS_UPDATE',
-      resource: 'STORE_SETTINGS',
-      details: 'Updated delivery rates & branding configuration',
-      time: 'Yesterday, 11:40 PM',
-      ip: '103.145.24.12',
-    },
-  ]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
   // Account Password Form
   const [currentPass, setCurrentPass] = useState('');
@@ -201,24 +135,125 @@ export const AdminDashboardPage: React.FC = () => {
   const [confirmPass, setConfirmPass] = useState('');
   const [isChangingPass, setIsChangingPass] = useState(false);
 
-  // Sync settings helper
-  const updateAndSaveSettings = (newSettings: StoreSettingsData) => {
-    setSettings(newSettings);
-    saveLocalStoreSettings(newSettings);
-
-    // Also attempt server sync if online
-    fetch('/api/admin/settings', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}`,
-      },
-      body: JSON.stringify(newSettings),
-    }).catch(() => {
-      // Offline fallback
+  useEffect(() => {
+    const token = localStorage.getItem('mens_outfit_admin_token');
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+    const load = async (url: string) => {
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error(`Request failed (${response.status})`);
+      const json = await response.json();
+      return json.data;
+    };
+    Promise.allSettled([
+      load('/api/admin/settings'), load('/api/admin/orders'), load('/api/coupons'), load('/api/admin/audit-logs'),
+      load('/api/products/admin/list'), load('/api/categories?all=true'),
+    ]).then(([settingResult, orderResult, couponResult, logResult, productResult, categoryResult]) => {
+      if (settingResult.status === 'fulfilled') {
+        const nextSettings = { ...getLocalStoreSettings(), ...settingResult.value };
+        setSettings(nextSettings);
+        setBanners(nextSettings.banners || []);
+        saveLocalStoreSettings(nextSettings);
+      }
+      if (orderResult.status === 'fulfilled') setOrders(orderResult.value.map((o: any) => ({
+        id: o._id, orderNumber: o.orderNumber, customerName: o.shippingAddress?.fullName,
+        phone: o.shippingAddress?.phone, address: [o.shippingAddress?.address, o.shippingAddress?.area, o.shippingAddress?.city].filter(Boolean).join(', '),
+        total: o.payableTotal, status: o.status, paymentMethod: o.paymentMethod, createdAt: new Date(o.createdAt).toLocaleString(),
+      })));
+      if (couponResult.status === 'fulfilled') setCoupons(couponResult.value.map((c: any) => ({
+        ...c, type: c.discountType === 'percentage' ? 'percent' : 'fixed', discount: c.discountValue,
+        minSpend: c.minOrderAmount, active: c.isActive,
+      })));
+      if (logResult.status === 'fulfilled') setAuditLogs(logResult.value.map((log: any) => ({
+        ...log, id: log._id, time: new Date(log.createdAt).toLocaleString(), ip: log.ipAddress,
+      })));
+      if (productResult.status === 'fulfilled') {
+        setRemoteProducts(productResult.value);
+        setProducts(productResult.value.map((p: any) => ({
+          ...p, id: p._id, category: p.category?.name || 'Uncategorized', rating: p.averageRating || 0,
+          reviewCount: p.reviewCount || 0, variants: (p.variants || []).map((v: any, index: number) => ({ ...v, id: `${p._id}-${index}` })),
+        })));
+      }
+      if (categoryResult.status === 'fulfilled') setRemoteCategories(categoryResult.value);
+      if ([settingResult, orderResult, couponResult, logResult, productResult, categoryResult].some((r) => r.status === 'rejected')) {
+        toast.error('কিছু অ্যাডমিন তথ্য সার্ভার থেকে লোড হয়নি। API ও ডাটাবেজ সংযোগ দেখুন।');
+      }
     });
+  }, []);
 
-    toast.success('Settings saved successfully!');
+  const reloadProducts = async () => {
+    const response = await fetch('/api/products/admin/list', { headers: { Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` } });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Products could not be loaded');
+    setProducts((result.data || []).map((p: any) => ({
+      ...p, id: p._id, category: p.category?.name || 'Uncategorized', rating: p.averageRating || 0,
+      reviewCount: p.reviewCount || 0, variants: (p.variants || []).map((v: any, index: number) => ({ ...v, id: `${p._id}-${index}` })),
+    })));
+    setRemoteProducts(result.data || []);
+  };
+
+  const reloadCoupons = async () => {
+    const response = await fetch('/api/coupons', { headers: { Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` } });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Coupons could not be loaded');
+    setCoupons((result.data || []).map((c: any) => ({ ...c, type: c.discountType === 'percentage' ? 'percent' : 'fixed', discount: c.discountValue, minSpend: c.minOrderAmount, active: c.isActive })));
+  };
+
+  const handleCreateCoupon = async () => {
+    if (!newCouponCode.trim() || Number(newCouponDiscount) <= 0) return toast.error('কুপন কোড ও সঠিক ডিসকাউন্ট দিন।');
+    try {
+      const response = await fetch('/api/coupons', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` },
+        body: JSON.stringify({ code: newCouponCode.trim(), discountType: 'fixed', discountValue: Number(newCouponDiscount), minOrderAmount: 0, startDate: new Date().toISOString(), endDate: '2099-12-31T23:59:59.000Z' }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Coupon could not be created');
+      await reloadCoupons(); setNewCouponCode(''); toast.success('কুপন ডাটাবেজে তৈরি হয়েছে।');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'কুপন তৈরি হয়নি।'); }
+  };
+
+  const handleToggleCoupon = async (coupon: any) => {
+    try {
+      const response = await fetch(`/api/coupons/${coupon._id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` },
+        body: JSON.stringify({ isActive: !coupon.isActive }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Coupon update failed');
+      setCoupons((prev) => prev.map((item) => item._id === coupon._id ? { ...item, ...result.data, active: result.data.isActive } : item));
+      toast.success('কুপনের অবস্থা আপডেট হয়েছে।');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'কুপন আপডেট হয়নি।'); }
+  };
+
+  const handleDeleteCoupon = async (coupon: any) => {
+    if (!confirm(`“${coupon.code}” কুপন মুছে ফেলবেন?`)) return;
+    try {
+      const response = await fetch(`/api/coupons/${coupon._id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` } });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Coupon delete failed');
+      setCoupons((prev) => prev.filter((item) => item._id !== coupon._id)); toast.success('কুপন ডাটাবেজ থেকে মুছে ফেলা হয়েছে।');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'কুপন মুছে ফেলা যায়নি।'); }
+  };
+
+  // Persist settings in the database; never report success for a failed request.
+  const updateAndSaveSettings = async (newSettings: StoreSettingsData) => {
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}`,
+        },
+        body: JSON.stringify(newSettings),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Settings could not be saved');
+      setSettings({ ...getLocalStoreSettings(), ...result.data });
+      saveLocalStoreSettings({ ...getLocalStoreSettings(), ...result.data });
+      toast.success('Settings saved to database.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Settings could not be saved.');
+    }
   };
 
   // Add / Edit Product
@@ -240,7 +275,7 @@ export const AdminDashboardPage: React.FC = () => {
     setShowAddProductModal(true);
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prodTitle.trim()) {
       toast.error('Please enter product title');
@@ -249,15 +284,18 @@ export const AdminDashboardPage: React.FC = () => {
 
     const priceNum = Number(prodPrice) || 850;
     const compareNum = Number(prodComparePrice) || priceNum + 200;
-    const id = editingProduct ? editingProduct.id : `custom-${Date.now()}`;
-    const slug = prodTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `product-${id}`;
-    const image = prodImage.trim() || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80';
+    const id = editingProduct?.id;
+    const image = prodImage.trim();
+    if (!image) {
+      toast.error('Upload or provide a product image before saving.');
+      return;
+    }
 
     const newProd: Product = {
-      id,
+      id: id || '',
       title: prodTitle.trim(),
       titleBn: prodTitleBn.trim() || prodTitle.trim(),
-      slug,
+      slug: '',
       description: prodDesc.trim() || "Men's Outfit 100% premium combed cotton apparel. Durable stitching and comfortable tailored fit.",
       price: priceNum,
       compareAtPrice: compareNum,
@@ -274,8 +312,32 @@ export const AdminDashboardPage: React.FC = () => {
       reviewCount: 1,
     };
 
-    saveProduct(newProd);
-    setProducts(getAllProducts());
+    try {
+      const token = localStorage.getItem('mens_outfit_admin_token') || '';
+      const categoryResponse = await fetch('/api/categories');
+      const categoryJson = await categoryResponse.json();
+      const categorySlug = prodCategory.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const category = (categoryJson.data || []).find((c: any) => c.name?.toLowerCase() === prodCategory.toLowerCase() || c.slug === categorySlug);
+      if (!category?._id) throw new Error(`Database category “${prodCategory}” was not found. Add or map this category first.`);
+      const payload = {
+        title: newProd.title, titleBn: newProd.titleBn, description: newProd.description,
+        price: newProd.price, compareAtPrice: newProd.compareAtPrice,
+        images: newProd.images, tags: newProd.tags, category: category._id,
+        isPublished: true, isNewArrival: true,
+        variants: newProd.variants.map(({ size, color, colorCode, sku, stock }) => ({ size, color, colorCode, sku, stock })),
+      };
+      const response = await fetch(id ? `/api/products/${id}` : '/api/products', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Product could not be saved');
+      await reloadProducts();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Product could not be saved.');
+      return;
+    }
     setShowAddProductModal(false);
     setEditingProduct(null);
     setProdTitle('');
@@ -285,16 +347,20 @@ export const AdminDashboardPage: React.FC = () => {
     toast.success(`Product "${newProd.title}" saved successfully!`);
   };
 
-  const handleDeleteProduct = (productId: string, title: string) => {
+  const handleDeleteProduct = async (productId: string, title: string) => {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
-      deleteProduct(productId);
-      setProducts(getAllProducts());
-      toast.success(`"${title}" deleted successfully!`);
+      try {
+        const response = await fetch(`/api/products/${productId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` } });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Product could not be deleted');
+        await reloadProducts();
+        toast.success(`"${title}" deleted from database.`);
+      } catch (error) { toast.error(error instanceof Error ? error.message : 'Product could not be deleted.'); }
     }
   };
 
   // Quick Stock Increment
-  const handleQuickStockIncrement = (productId: string, size: string, delta: number) => {
+  const handleQuickStockIncrement = async (productId: string, size: string, delta: number) => {
     const prod = products.find((p) => p.id === productId);
     if (!prod) return;
     const updatedVariants = prod.variants.map((v) => {
@@ -304,24 +370,30 @@ export const AdminDashboardPage: React.FC = () => {
       return v;
     });
     const updatedProd = { ...prod, variants: updatedVariants };
-    saveProduct(updatedProd);
-    setProducts(getAllProducts());
-    toast.success(`Updated stock for ${prod.title} (${size})`);
+    try {
+      const payload = { variants: updatedVariants.map(({ size: variantSize, color, colorCode, sku, stock }) => ({ size: variantSize, color, colorCode, sku, stock })) };
+      const response = await fetch(`/api/products/${productId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` }, body: JSON.stringify(payload) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Inventory update failed');
+      await reloadProducts();
+      toast.success(`Stock updated for ${prod.title} (${size})`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Inventory could not be updated.'); }
   };
 
   // Order status update
-  const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const stored = JSON.parse(localStorage.getItem('mens_outfit_orders') || '[]');
-      const updated = stored.map((o: any) => o.id === orderId ? { ...o, status: newStatus } : o);
-      localStorage.setItem('mens_outfit_orders', JSON.stringify(updated));
-    } catch {
-      // local
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('mens_outfit_admin_token') || ''}` },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Order update failed');
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
+      toast.success(`Order status updated to '${newStatus}'`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Order status could not be updated.');
     }
-    toast.success(`Order status updated to '${newStatus}'`);
   };
 
   // Add Banner
@@ -1268,18 +1340,7 @@ export const AdminDashboardPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Logo Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.logoUrl}
-                    onChange={(e) => setSettings({ ...settings, logoUrl: e.target.value })}
-                    placeholder="/logo.png or https://..."
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
-                  />
-                </div>
+                <div><ImageUploadField label="Store logo" value={settings.logoUrl} onChange={(logoUrl) => setSettings({ ...settings, logoUrl })} /></div>
 
                 <div className="md:col-span-2 flex items-center gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200">
                   <img
@@ -1699,6 +1760,11 @@ export const AdminDashboardPage: React.FC = () => {
                   <h2 className="text-lg font-bold text-slate-900">Coupons & Discount Codes</h2>
                   <p className="text-xs text-slate-500">Create promotional vouchers applicable at checkout</p>
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  <input aria-label="Coupon code" value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())} placeholder="NEW CODE" className="px-3 py-2 border border-slate-300 rounded-lg text-xs" />
+                  <input aria-label="Fixed discount in taka" type="number" min="1" value={newCouponDiscount} onChange={(e) => setNewCouponDiscount(e.target.value)} className="w-28 px-3 py-2 border border-slate-300 rounded-lg text-xs" />
+                  <Button onClick={handleCreateCoupon} className="gap-1 text-xs"><Plus className="w-3.5 h-3.5" />Create coupon</Button>
+                </div>
               </div>
 
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
@@ -1709,6 +1775,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <th className="py-3 px-4">Discount</th>
                       <th className="py-3 px-4">Min. Spend</th>
                       <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1720,9 +1787,13 @@ export const AdminDashboardPage: React.FC = () => {
                         </td>
                         <td className="py-3 px-4">৳{c.minSpend}</td>
                         <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-sans font-semibold">
-                            Active
+                          <span className={`px-2 py-0.5 rounded text-[10px] border font-sans font-semibold ${c.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                            {c.active ? 'Active' : 'Inactive'}
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-right space-x-2">
+                          <button onClick={() => handleToggleCoupon(c)} className="text-[#15547F] hover:underline">{c.active ? 'Disable' : 'Enable'}</button>
+                          <button onClick={() => handleDeleteCoupon(c)} className="text-rose-600 hover:underline">Delete</button>
                         </td>
                       </tr>
                     ))}
@@ -1799,22 +1870,7 @@ export const AdminDashboardPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Image URL</label>
-                  <input
-                    type="text"
-                    value={prodImage}
-                    onChange={(e) => setProdImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/... or CDN link"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
-                  />
-                  {prodImage && (
-                    <div className="mt-2 flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
-                      <img src={prodImage} alt="Preview" className="w-12 h-12 object-cover rounded" />
-                      <span className="text-[11px] text-slate-500">Live Image Preview</span>
-                    </div>
-                  )}
-                </div>
+                <div className="sm:col-span-2"><ImageUploadField label="Product image" value={prodImage} onChange={setProdImage} /></div>
 
                 <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-slate-700 block mb-1">Stock Quantities (Sizes)</label>
